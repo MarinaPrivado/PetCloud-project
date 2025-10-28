@@ -1,9 +1,5 @@
 NOME DO SISTEMA: PetCloud - Sistema de Gestão e Comunidade para Pets
 
-DESENVOLVEDORA(Aluna): 
-Nome: Marina Luanda Privado Coelho; 
-
-
 ## INSTRUÇÕES DE NAVEGAÇÃO:
 
 ### 1. Arquivo Inicial
