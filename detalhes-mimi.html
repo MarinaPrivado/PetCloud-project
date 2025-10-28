@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Mimi - PetCloud</title>
+    <link rel="shortcut icon" href="imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* =========================================== */
+        /* Estilos Globais e Paleta de Cores (Mantidos) */
+        /* =========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            /* Fundo Azul Claro do PetCloud */
+            background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            position: relative; 
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        /* Cabeçalho (MANTIDO) */
+        header {
+            background-color: #1a1a1a; 
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        header nav ul { list-style: none; display: flex; gap: 25px; }
+        header nav ul li a { color: white; text-decoration: none; font-weight: 500; padding: 5px 0; }
+        header nav ul li a:hover { color: #a8e6f5; }
+
+        /* Título Principal e Ações (PERFIL) */
+        .pet-header {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative; 
+        }
+
+        .pet-info h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            color: #FF9933; 
+        }
+        
+        .pet-info p {
+            font-size: 18px;
+            color: #666;
+        }
+
+        /* Botões de Ação */
+        .actions a {
+            display: inline-block;
+            background: #1a1a1a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-left: 10px;
+            transition: background 0.3s;
+        }
+        .actions .btn-primary { background: #FF9933; }
+        .actions .btn-primary:hover { background: #E68A2E; }
+
+        /* =========================================== */
+        /* LAYOUT - Foco na Linha do Tempo (Detalhes) */
+        /* =========================================== */
+        .details-grid {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: 2fr 1fr; 
+        }
+        
+        @media (max-width: 900px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Bloco Principal de Dados - História do Pet */
+        .data-block {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .data-block h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Bloco Lateral (Sidebar) */
+        .sidebar-column section {
+             /* Cor de suporte para o sidebar: usando um rosa mais suave para fêmeas/gatos */
+            background: #ffe0e0; 
+            margin-bottom: 30px;
+        }
+        
+        .fixed-data li {
+            padding: 10px 0;
+            border-bottom: 1px dashed #ffcaca;
+        }
+        
+        /* Estilo para TAGS de Personalidade */
+        .tag {
+            display: inline-block;
+            background: #FF9933; 
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Linha do Tempo */
+        .timeline-item {
+            border-left: 4px solid #ff9933; /* Cor da linha mudada para Laranja */
+            padding-left: 20px;
+            margin-bottom: 35px; 
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: ' ';
+            position: absolute;
+            left: -12px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: #1a1a1a; /* Ponto preto/escuro para o gato */
+            border-radius: 50%;
+            border: 4px solid #fff;
+        }
+
+        /* =========================================== */
+        /* Setas de Navegação Lateral */
+        /* =========================================== */
+        .full-width-nav-arrow {
+            position: fixed; 
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.1); 
+            color: white; 
+            border: none;
+            cursor: pointer;
+            width: 55px; 
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            transition: background 0.3s, opacity 0.3s;
+            opacity: 0.8;
+            z-index: 1000; 
+        }
+        
+        .full-width-nav-arrow:hover {
+            background: rgba(255, 153, 51, 0.8); 
+            opacity: 1;
+        }
+
+        #prev-pet { left: 20px; }
+        #next-pet { right: 20px; }
+        
+        @media (max-width: 900px) {
+            .full-width-nav-arrow { display: none; }
+        }
+
+        /* Rodapé */
+        footer {
+            text-align: center;
+            color: #333; 
+            padding: 20px 0;
+            font-size: 14px;
+            margin-top: 40px; 
+            background: transparent; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PetCloud</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="dashboard.html" style="color: #FF9933; border-bottom: 2px solid #FF9933;">Dashboard</a></li>
+                <li><a href="listagem.html">Pets</a></li>
+                <li><a href="concurso.html">Concursos Pets</a></li>
+                <li><a href="index.html">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="pet-header">
+            <div class="pet-info">
+                <h1>Mimi</h1>
+                <p><i class="fas fa-cat"></i> Siamesa - 5 anos</p>
+            </div>
+            <div class="actions">
+                <a href="#" class="btn-primary"><i class="fas fa-plus"></i> Adicionar Log/Foto</a>
+                <a href="#"><i class="fas fa-edit"></i> Editar Perfil</a>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            
+            <div class="history-column">
+                <section class="data-block">
+                    <h3><i class="fas fa-history"></i> Linha do Tempo: Saúde e Momentos Especiais</h3>
+                    
+                    <div class="timeline-item">
+                        <h4>Castração (Revisão Anual)</h4>
+                        <p>Exames de rotina OK. Peso estável. Recomendado foco na escovação dentária.</p>
+                        <span><i class="fas fa-calendar-alt"></i> Outubro, 2025</span>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <h4>Momento Especial: Conseguiu subir na estante mais alta! 😼</h4>
+                        <p>Superou o medo de altura e conquistou o topo da prateleira de livros. Uma verdadeira escaladora!</p>
+                        
+                        <div class="timeline-gallery">
+                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                        </div>
+                        
+                        <span><i class="fas fa-calendar-alt"></i> Julho, 2025</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>Vacina Tríplice Felina (Reforço)</h4>
+                        <p>Dose aplicada. Próximo reforço em Julho/2026. Lote: GAT009.</p>
+                        <span><i class="fas fa-calendar-alt"></i> Julho, 2025</span>
+                    </div>
+                </section>
+            </div>
+
+            <div class="sidebar-column">
+                
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-info-circle"></i> Dados Básicos</h3>
+                    <ul>
+                        <li><strong>Espécie:</strong> Gato</li>
+                        <li><strong>Raça:</strong> Siamês</li>
+                        <li><strong>Nascimento:</strong> 01/01/2020</li>
+                        <li><strong>Veterinário Principal:</strong> Dra. Ana Lúcia</li>
+                    </ul>
+                </section>
+
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-brain"></i> Personalidade e Comportamento</h3>
+                    <div class="personality-tags">
+                        <span class="tag">Dorminhoca</span>
+                        <span class="tag">Observadora</span>
+                        <span class="tag">Gosta de Carinho</span>
+                        <span class="tag">Caçadora (Brinquedos)</span>
+                    </div>
+                    <p style="font-size: 14px; margin-top: 15px; color: #333;">Mimi é quieta e reservada, mas adora brincar com laser pointer à noite. Não gosta de ser pega no colo.</p>
+                </section>
+                
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-cut"></i> Rotina e Higiene</h3>
+                    <ul>
+                        <li><strong>Próxima Escovação:</strong> Diária</li>
+                        <li><strong>Ração Atual:</strong> Royal Canin Indoor </li>
+                        <li><strong>Dose Diária:</strong> 60g (2x ao dia)</li>
+                        <li><strong>Caixa de Areia:</strong> Granulado de madeira</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <button id="prev-pet" class="full-width-nav-arrow" title="Pet Anterior">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    <button id="next-pet" class="full-width-nav-arrow" title="Próximo Pet">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <footer>
+        <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
+    </footer>
+</body>
+</html>
