@@ -1,0 +1,225 @@
+/* =========================================== */
+/* Estilos Globais e Vídeo de Fundo */
+/* =========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+body {
+    background: #c4e9f7; 
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px 20px 0 20px;
+    color: #1a1a1a;
+}
+
+.hero-video-container {
+    position: relative;
+    overflow: hidden; 
+    border-radius: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    max-width: 1000px;
+    width: 100%;
+    height: 500px; 
+    margin-top: 40px;
+    margin-bottom: 40px;
+}
+
+#background-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: 1; 
+    transform: translate(-50%, -50%);
+    object-fit: cover; 
+    filter: brightness(60%); 
+}
+
+.hero-section {
+    position: relative;
+    z-index: 2; 
+    padding: 40px 60px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; 
+    align-items: center;
+    text-align: center;
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.hero-section h1 {
+    font-size: 56px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: white; 
+}
+
+.hero-subtitle {
+    font-size: 24px;
+    color: white; 
+    margin-bottom: 40px;
+    font-weight: 300;
+}
+
+.btn-cta {
+    display: inline-block;
+    padding: 18px 40px;
+    background: #FF9933; 
+    color: #1a1a1a; 
+    border: none;
+    border-radius: 50px;
+    font-size: 20px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.2s;
+    margin-bottom: 60px; 
+}
+
+.btn-cta:hover {
+    background: #FF8C00;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.features-section {
+    background:#f9acac;
+    border-radius: 40px;
+    max-width: 1000px;
+    width: 100%;
+    padding: 40px 60px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.features-section h2 {
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 30px;
+    color: #1a1a1a;
+    text-align: center;
+}
+
+.features-list {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    padding: 0;
+}
+
+.features-list li {
+    background: #f0f8ff; 
+    padding: 25px;
+    border-radius: 15px;
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s;
+}
+
+.features-list li::before {
+    content: '🐾'; 
+    margin-right: 10px;
+    font-size: 20px;
+}
+
+.features-list li:hover {
+    transform: translateY(-5px);
+}
+
+.top-bar {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10; 
+}
+
+.top-bar .logo {
+    font-size: 24px;
+    font-weight: 700;
+    color: white; 
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); 
+    text-decoration: none;
+}
+
+.top-bar nav a {
+    color: white; 
+    text-decoration: none;
+    font-weight: 500;
+    margin-left: 20px;
+    padding: 8px 15px;
+    border-radius: 20px;
+    transition: background-color 0.3s;
+    background-color: rgba(255, 255, 255, 0.1); 
+}
+
+.top-bar nav a:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+footer {
+    width: 100%;
+    text-align: center;
+    color: #333; 
+    padding: 20px 0;
+    font-size: 14px;
+    margin-top: auto; 
+    background: transparent; 
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    .hero-video-container {
+        height: 400px;
+        margin: 20px 0;
+    }
+
+    .hero-section h1 {
+        font-size: 40px;
+    }
+
+    .hero-subtitle {
+        font-size: 18px;
+    }
+
+    .btn-cta {
+        padding: 15px 30px;
+        font-size: 18px;
+    }
+
+    .features-section h2 {
+        font-size: 26px;
+    }
+    
+    .top-bar .logo {
+        font-size: 20px;
+    }
+    
+    .top-bar nav a {
+        margin-left: 10px;
+        padding: 5px 10px;
+        font-size: 14px;
+    }
+}
