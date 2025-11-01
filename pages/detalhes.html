@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes do Fido - PetCloud</title>
+    <link rel="shortcut icon" href="../imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* =========================================== */
+        /* Estilos Globais e Paleta de Cores */
+        /* =========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            /* Fundo Azul Claro do PetCloud */
+            background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+            position: relative; /* Adicionado: Essencial para o posicionamento 'fixed' das setas em relação ao body */
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        /* Cabeçalho (MANTIDO) */
+        header {
+            background-color: #1a1a1a; 
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        header nav ul { list-style: none; display: flex; gap: 25px; }
+        header nav ul li a { color: white; text-decoration: none; font-weight: 500; padding: 5px 0; }
+        header nav ul li a:hover { color: #a8e6f5; }
+
+        /* Título Principal e Ações (MANTIDO) */
+        .pet-header {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pet-info h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            color: #FF9933; 
+        }
+
+        .pet-info p {
+            font-size: 18px;
+            color: #666;
+        }
+
+        .actions a {
+            display: inline-block;
+            background: #1a1a1a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            margin-left: 10px;
+            transition: background 0.3s;
+        }
+
+        .actions a:hover {
+            background: #333;
+        }
+        
+        .actions .btn-primary {
+            background: #FF9933;
+        }
+        .actions .btn-primary:hover {
+            background: #E68A2E;
+        }
+
+        /* =========================================== */
+        /* Layout de Conteúdo (Grid) */
+        /* =========================================== */
+        .details-grid {
+            display: grid;
+            gap: 30px;
+            grid-template-columns: 2fr 1fr; /* Histórico + Lateral */
+        }
+        
+        @media (max-width: 900px) {
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* =========================================== */
+        /* Blocos de Dados e Histórico */
+        /* =========================================== */
+        .data-block {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .data-block h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Bloco Lateral: Usa a cor de Suporte Rosa */
+        .sidebar-column section {
+            background: #f9acac; 
+            margin-bottom: 30px;
+        }
+        
+        .fixed-data ul {
+            list-style: none;
+        }
+
+        .fixed-data li {
+            padding: 10px 0;
+            border-bottom: 1px dashed #f09a9a;
+            font-size: 16px;
+        }
+        
+        .fixed-data li strong {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .fixed-data li:last-child {
+            border-bottom: none;
+        }
+
+        /* Estilo para TAGS de Personalidade */
+        .personality-tags {
+            margin-top: 10px;
+        }
+        
+        .tag {
+            display: inline-block;
+            background: #FF9933; /* Laranja de Ação */
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Histórico (Linha do Tempo Aprimorada) */
+        .timeline-item {
+            border-left: 4px solid #a8e6f5; 
+            padding-left: 20px;
+            margin-bottom: 35px; /* Mais espaço para as fotos */
+            position: relative;
+        }
+
+        .timeline-item::before {
+            content: ' ';
+            position: absolute;
+            left: -12px;
+            top: 0;
+            width: 20px;
+            height: 20px;
+            background: #FF9933; 
+            border-radius: 50%;
+            border: 4px solid #fff;
+        }
+        
+        .timeline-item h4 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #1a1a1a;
+        }
+
+        .timeline-item span {
+            display: block;
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        /* Simulação de Galeria/Fotos */
+        .timeline-gallery {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .timeline-photo {
+            width: 80px;
+            height: 80px;
+            background: #a8e6f5; /* Fundo Azul Nuvem para simular a foto */
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #1a1a1a;
+            border: 2px solid #fff;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* =========================================== */
+        /* Setas de Navegação no Fundo Azul (INTEGRADO) */
+        /* =========================================== */
+        .full-width-nav-arrow {
+            position: fixed; /* Fixado no viewport para sempre ficar na lateral */
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.1); 
+            color: white; /* Cor da seta: Branca */
+            border: none;
+            cursor: pointer;
+            width: 55px; 
+            height: 55px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            transition: background 0.3s, opacity 0.3s;
+            opacity: 0.8;
+            z-index: 1000; /* Garante que fique acima de todo o conteúdo */
+        }
+        
+        .full-width-nav-arrow:hover {
+            background: rgba(255, 153, 51, 0.8); /* Laranja sutil no hover */
+            opacity: 1;
+        }
+
+        #prev-pet {
+            left: 20px; /* Posição na lateral esquerda do viewport */
+        }
+
+        #next-pet {
+            right: 20px; /* Posição na lateral direita do viewport */
+        }
+        
+        /* Ocultar as setas em telas pequenas (smartphones) */
+        @media (max-width: 900px) {
+            .full-width-nav-arrow { display: none; }
+        }
+
+        /* =========================================== */
+        /* Rodapé (MANTIDO) */
+        /* =========================================== */
+        footer {
+            text-align: center;
+            color: #333; 
+            padding: 20px 0;
+            font-size: 14px;
+            margin-top: 40px; 
+            background: transparent; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PetCloud</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="/listagem.html" class="nav-link">Pets</a></li>
+                <li><a href="/concurso.html" class="nav-link">Concursos Pets</a></li>
+                <li><a href="/" onclick="logout(); return false;">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <script>
+            document.querySelectorAll('.nav-link').forEach(function(link) {
+                if (window.location.pathname === link.getAttribute('href')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        </script>
+        <div class="pet-header">
+            <div class="pet-info">
+                <h1>Fido</h1>
+                <p><i class="fas fa-dog"></i> Pitbull - 3 anos</p>
+            </div>
+            <div class="actions">
+                <a href="#" class="btn-primary"><i class="fas fa-plus"></i> Adicionar Log/Foto</a>
+                <a href="#"><i class="fas fa-edit"></i> Editar Perfil</a>
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <div class="history-column">
+                
+                <section class="data-block">
+                    <h3><i class="fas fa-history"></i> Linha do Tempo: Saúde e Momentos Especiais</h3>
+                    
+                    <div class="timeline-item">
+                        <h4>Vacina V8 (Reforço Anual)</h4>
+                        <p>Dose aplicada pelo Dr. Carlos. Próxima dose em Outubro/2026. Lote: XYZ123.</p>
+                        <span><i class="fas fa-calendar-alt"></i> Outubro, 2025</span>
+                    </div>
+                    
+                    <div class="timeline-item">
+                        <h4>Momento Especial: Primeira Viagem à Praia! 🏖️</h4>
+                        <p>Fido adorou correr na areia e brincar com as ondas. Dia inesquecível!</p>
+                        
+                        <div class="timeline-gallery">
+                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                        </div>
+                        
+                        <span><i class="fas fa-calendar-alt"></i> Julho, 2025</span>
+                    </div>
+
+                    <div class="timeline-item">
+                        <h4>Consulta de Rotina</h4>
+                        <p>Exames de sangue OK. Recomendado reforço de vermífugo em 3 meses.</p>
+                        <span><i class="fas fa-calendar-alt"></i> Junho, 2025</span>
+                    </div>
+
+                </section>
+            </div>
+
+            <div class="sidebar-column">
+                
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-info-circle"></i> Dados Básicos</h3>
+                    <ul>
+                        <li><strong>Espécie:</strong> Cachorro</li>
+                        <li><strong>Raça:</strong> Pitbull</li>
+                        <li><strong>Nascimento:</strong> 15/05/2022</li>
+                        <li><strong>Veterinário Principal:</strong> Dr. Carlos Souza</li>
+                    </ul>
+                </section>
+
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-brain"></i> Personalidade e Comportamento</h3>
+                    <div class="personality-tags">
+                        <span class="tag">Brincalhão</span>
+                        <span class="tag">Calmo</span>
+                        <span class="tag">Amigável com Crianças</span>
+                        <span class="tag">Gosta de Água</span>
+                    </div>
+                    <p style="font-size: 14px; margin-top: 15px; color: #333;">Fido é extrovertido, mas se assusta com trovões fortes. Reage bem a comandos simples.</p>
+                </section>
+                
+                <section class="data-block fixed-data">
+                    <h3><i class="fas fa-cut"></i> Rotina e Higiene</h3>
+                    <ul>
+                        <li><strong>Próximo Banho:</strong> 25/10/2025</li>
+                        <li><strong>Próxima Tosa:</strong> 10/11/2025</li>
+                        <li><strong>Ração Atual:</strong> Premier Raças Grandes</li>
+                        <li><strong>Dose Diária:</strong> 400g (2x ao dia)</li>
+                    </ul>
+                </section>
+            </div>
+        </div>
+    </main>
+    
+    <button id="prev-pet" class="full-width-nav-arrow" title="Pet Anterior">
+        <i class="fas fa-chevron-left"></i>
+    </button>
+    <button id="next-pet" class="full-width-nav-arrow" title="Próximo Pet">
+        <i class="fas fa-chevron-right"></i>
+    </button>
+
+    <footer>
+        <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
+    </footer>
+</body>
+</html>
