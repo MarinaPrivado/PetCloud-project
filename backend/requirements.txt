@@ -1,0 +1,5 @@
+sqlalchemy>=1.4.0
+python-dateutil>=2.8.2
+alembic>=1.7.0  # For database migrations
+flask>=2.0.0
+flask-cors>=3.0.0

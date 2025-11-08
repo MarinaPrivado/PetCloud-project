@@ -1,3 +1,100 @@
+.add-pet-btn {
+    background: #FF9933;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: background 0.2s;
+}
+.add-pet-btn:hover {
+    background: #e07c1e;
+    color: #fff;
+}
+.modal-content .form-group {
+    margin-bottom: 1.5rem;
+}
+.modal-content input[type="text"],
+.modal-content input[type="number"] {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #c4e9f7;
+    border-radius: 24px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s;
+    background: #f5f5f5;
+}
+.modal-content input[type="text"]:focus,
+.modal-content input[type="number"]:focus {
+    border-color: #FF9933;
+}
+.modal-content label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+.modal-content .btn-primary {
+    background: #FF9933;
+    color: #fff;
+    border: none;
+    padding: 0.75rem 2rem;
+    border-radius: 24px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 1rem;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    transition: background 0.2s;
+}
+.modal-content .btn-primary:hover {
+    background: #e07c1e;
+}
+/* Modal de cadastro de pet */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.3);
+}
+.modal-content {
+    background: #fff;
+    margin: 5% auto;
+    padding: 2rem;
+    border-radius: 16px;
+    max-width: 400px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.15);
+    position: relative;
+}
+.close {
+    color: #aaa;
+    position: absolute;
+    top: 16px;
+    right: 24px;
+    font-size: 32px;
+    font-weight: bold;
+    cursor: pointer;
+}
+.close:hover {
+    color: #FF9933;
+}
+/* Espaçamento entre logo e menu de navegação */
+header nav ul {
+    margin-left: 40px;
+}
+/* Destaca o botão ativo no menu de navegação */
+.nav-link.active {
+    color: #FF9933;
+    border-bottom: 2px solid #FF9933;
+}
 /* =========================================== */
 /* Estilos Globais e Vídeo de Fundo */
 /* =========================================== */
@@ -69,8 +166,25 @@ body {
 .hero-subtitle {
     font-size: 24px;
     color: white; 
-    margin-bottom: 40px;
+    margin-bottom: 20px;
     font-weight: 300;
+}
+
+.hero-button {
+    display: inline-block;
+    padding: 15px 30px;
+    margin-top: 20px;
+    background-color: #4CAF50;
+    color: white;
+    text-decoration: none;
+    border-radius: 25px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.hero-button:hover {
+    background-color: #45a049;
+    transform: scale(1.05);
 }
 
 .btn-cta {
