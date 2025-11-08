@@ -27,6 +27,7 @@ def cadastrar_pet():
     name = data.get('nome')
     breed = data.get('raca')
     birth_date = data.get('birth_date')
+    pet_type = data.get('especie')  # Captura o campo especie (opcional)
 
     # Validação dos campos obrigatórios
     if not all([name, breed, birth_date]):
@@ -46,11 +47,11 @@ def cadastrar_pet():
         }), 400
 
     db = SessionLocal()
-    pet = Pet(name=name, breed=breed, birth_date=birth_date_dt)
+    pet = Pet(name=name, breed=breed, birth_date=birth_date_dt, type=pet_type)
     db.add(pet)
     db.commit()
     db.refresh(pet)
-    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, raca={pet.breed}, nascimento={pet.birth_date}")
+    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}")
     db.close()
     return jsonify({
         'success': True,
@@ -62,6 +63,35 @@ def cadastrar_pet():
             'birth_date': pet.birth_date.strftime('%Y-%m-%d')
         }
     }), 201
+
+# Rota para listar todos os pets
+@app.route('/api/pets', methods=['GET'])
+def listar_pets():
+    db = SessionLocal()
+    try:
+        pets = db.query(Pet).all()
+        pets_list = []
+        for pet in pets:
+            pets_list.append({
+                'id': pet.id,
+                'name': pet.name,
+                'type': pet.type,
+                'breed': pet.breed,
+                'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None
+            })
+        print(f"[LISTAGEM] Retornando {len(pets_list)} pets")
+        return jsonify({
+            'success': True,
+            'pets': pets_list
+        }), 200
+    except Exception as e:
+        print(f"[ERRO] Erro ao listar pets: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao listar pets'
+        }), 500
+    finally:
+        db.close()
 
 # Rota para servir arquivos estáticos da raiz (css, imagens, etc)
 @app.route('/<path:filename>')

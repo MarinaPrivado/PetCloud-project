@@ -265,7 +265,7 @@
         <section>
             <h2>Meus Pets Cadastrados</h2>
             <p>Visualize todos os seus pets e acesse o diário completo de saúde e bem-estar de cada um.</p>
-            <button id="openPetModal" class="add-pet-btn" type="button">+ Adicionar Novo Pet</button>
+            <a href="novo_pet.html"><button class="add-pet-btn" type="button">+ Adicionar Novo Pet</button></a>
         <script>
             // Abrir modal
             document.getElementById('openPetModal').onclick = function() {
@@ -296,35 +296,95 @@
         </script>
         </section>
 
-        <div class="pet-list">
-            <article class="pet-card">
-                <h3>Fido</h3>
-                <p>Raça: Pitbull | Idade: 3 anos</p>
-                <a href="detalhes.html">Ver Detalhes</a>
-            </article>
-
-            <article class="pet-card">
-                <h3>Mimi</h3>
-                <p>Raça: Siamês | Idade: 2 anos</p>
-                <a href="detalhes-mimi.html">Ver Detalhes</a>
-            </article>
-
-            <article class="pet-card">
-                <h3>Bob</h3>
-                <p>Raça: Poodle | Idade: 1 ano</p>
-                <a href="detalhes-bob.html">Ver Detalhes</a>
-            </article>
-
-             <article class="pet-card">
-                <h3>Luna</h3>
-                <p>Raça: Gata Vira-Lata | Idade: 5 meses</p>
-                <a href="detalhes-luna.html">Ver Detalhes</a>
-            </article>
+        <div class="pet-list" id="pet-list">
+            <!-- Os pets serão carregados automaticamente do banco de dados -->
+            <p style="text-align: center; color: #666; padding: 40px;">Carregando pets...</p>
         </div>
     </main>
 
     <footer>
         <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
     </footer>
+
+    <script>
+        // Função para calcular idade a partir da data de nascimento
+        function calcularIdade(birthDate) {
+            if (!birthDate) return 'Idade desconhecida';
+            
+            const nascimento = new Date(birthDate);
+            const hoje = new Date();
+            let anos = hoje.getFullYear() - nascimento.getFullYear();
+            let meses = hoje.getMonth() - nascimento.getMonth();
+            
+            if (meses < 0 || (meses === 0 && hoje.getDate() < nascimento.getDate())) {
+                anos--;
+                meses += 12;
+            }
+            
+            if (anos > 0) {
+                return `${anos} ${anos === 1 ? 'ano' : 'anos'}`;
+            } else if (meses > 0) {
+                return `${meses} ${meses === 1 ? 'mês' : 'meses'}`;
+            } else {
+                return 'Recém-nascido';
+            }
+        }
+
+        // Função para carregar pets automaticamente do banco de dados
+        async function carregarPets() {
+            try {
+                console.log('[LISTAGEM] Buscando pets do banco de dados...');
+                const response = await fetch('http://localhost:5000/api/pets');
+                const data = await response.json();
+                
+                if (data.success && data.pets) {
+                    const petList = document.getElementById('pet-list');
+                    petList.innerHTML = ''; // Limpa o conteúdo
+                    
+                    console.log(`[LISTAGEM] ${data.pets.length} pets encontrados`);
+                    
+                    if (data.pets.length === 0) {
+                        petList.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Nenhum pet cadastrado ainda. Clique em "Cadastrar Novo Pet" para adicionar o primeiro!</p>';
+                        return;
+                    }
+                    
+                    // Cria um card para cada pet do banco
+                    data.pets.forEach(pet => {
+                        const article = document.createElement('article');
+                        article.className = 'pet-card';
+                        
+                        const nome = document.createElement('h3');
+                        nome.textContent = pet.name || 'Sem nome';
+                        
+                        const info = document.createElement('p');
+                        const raca = pet.breed || 'Raça não informada';
+                        const tipo = pet.type ? ` (${pet.type})` : '';
+                        const idade = calcularIdade(pet.birth_date);
+                        info.textContent = `Raça: ${raca}${tipo} | Idade: ${idade}`;
+                        
+                        const link = document.createElement('a');
+                        link.href = `detalhes.html?id=${pet.id}`;
+                        link.textContent = 'Ver Detalhes';
+                        
+                        article.appendChild(nome);
+                        article.appendChild(info);
+                        article.appendChild(link);
+                        petList.appendChild(article);
+                    });
+                    
+                    console.log('[LISTAGEM] Pets carregados com sucesso!');
+                } else {
+                    console.error('[LISTAGEM] Erro na resposta:', data);
+                    document.getElementById('pet-list').innerHTML = '<p style="text-align: center; color: #d32f2f; padding: 40px;">Erro ao carregar pets. Tente novamente mais tarde.</p>';
+                }
+            } catch (error) {
+                console.error('[LISTAGEM] Erro ao buscar pets:', error);
+                document.getElementById('pet-list').innerHTML = '<p style="text-align: center; color: #d32f2f; padding: 40px;">Erro ao conectar ao servidor. Verifique se o backend está rodando na porta 5000.</p>';
+            }
+        }
+
+        // Carrega os pets automaticamente quando a página é aberta
+        document.addEventListener('DOMContentLoaded', carregarPets);
+    </script>
 </body>
 </html>

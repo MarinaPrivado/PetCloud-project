@@ -10,6 +10,7 @@ def list_all_pets():
         for pet in pets:
             print(f"ID: {pet.id}")
             print(f"Nome: {pet.name}")
+            print(f"Espécie: {pet.type if pet.type else 'Não informado'}")
             print(f"Raça: {pet.breed}")
             print(f"Nascimento: {pet.birth_date}")
             print("-" * 40)

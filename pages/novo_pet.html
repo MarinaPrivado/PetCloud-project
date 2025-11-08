@@ -298,5 +298,44 @@
     <footer>
         <p>&copy; 2025 PetCloud. Cuidando dos seus melhores amigos.</p>
     </footer>
+
+    <script>
+        // Interceptar o envio do formulário e enviar para o backend
+        document.querySelector('form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const nome = document.getElementById('nome').value;
+            const especie = document.getElementById('especie').value;
+            const raca = document.getElementById('raca').value;
+            const data_nascimento = document.getElementById('data_nascimento').value;
+            
+            try {
+                const response = await fetch('/api/pets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nome: nome,
+                        especie: especie,
+                        raca: raca,
+                        birth_date: data_nascimento
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('Pet cadastrado com sucesso!');
+                    window.location.href = 'listagem.html';
+                } else {
+                    alert(result.message || 'Erro ao cadastrar pet.');
+                }
+            } catch (error) {
+                alert('Erro de conexão com o servidor.');
+                console.error(error);
+            }
+        });
+    </script>
 </body>
 </html>
