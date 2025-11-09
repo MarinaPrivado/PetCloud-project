@@ -31,6 +31,9 @@ class Pet(Base):
 
     # Relationship with User model - will be set in __init__.py
     owner = None  # type: Optional[User]
+    
+    # Relationship with Vaccine model
+    vaccines = relationship("Vaccine", back_populates="pet", cascade="all, delete-orphan")
 
     def get_health_records(self) -> List[Dict]:
         """Get health records as a Python list"""

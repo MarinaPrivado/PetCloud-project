@@ -280,9 +280,117 @@
             margin-top: 40px; 
             background: transparent; 
         }
+
+        /* =========================================== */
+        /* Modal de Edição */
+        /* =========================================== */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-content {
+            background-color: #fff;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .btn-submit {
+            background: #FF9933;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .btn-submit:hover {
+            background: #E68A2E;
+        }
+
+        #editFormMessage {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
+    <!-- Modal de Edição -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeEditModal">&times;</span>
+            <h2>Editar Informações do Pet</h2>
+            <form id="editForm">
+                <div class="form-group">
+                    <label for="editName">Nome:</label>
+                    <input type="text" id="editName" name="editName" required />
+                </div>
+                <div class="form-group">
+                    <label for="editBreed">Raça:</label>
+                    <input type="text" id="editBreed" name="editBreed" required />
+                </div>
+                <div class="form-group">
+                    <label for="editType">Espécie:</label>
+                    <input type="text" id="editType" name="editType" placeholder="Ex: Cachorro, Gato, Pássaro..." />
+                </div>
+                <div class="form-group">
+                    <label for="editBirthDate">Data de Nascimento:</label>
+                    <input type="date" id="editBirthDate" name="editBirthDate" required />
+                </div>
+                <button type="submit" class="btn-submit">Salvar Alterações</button>
+            </form>
+            <div id="editFormMessage"></div>
+        </div>
+    </div>
+
     <header>
         <h1>🐾 PetCloud</h1>
         <nav>
@@ -307,12 +415,12 @@
         </script>
         <div class="pet-header">
             <div class="pet-info">
-                <h1>Fido</h1>
-                <p><i class="fas fa-dog"></i> Pitbull - 3 anos</p>
-            </div>
+                    <h1 id="pet-name">Fido</h1>
+                    <p id="pet-summary"><i class="fas fa-dog"></i> Pitbull - 3 anos</p>
+                </div>
             <div class="actions">
                 <a href="#" class="btn-primary"><i class="fas fa-plus"></i> Adicionar Log/Foto</a>
-                <a href="#"><i class="fas fa-edit"></i> Editar Perfil</a>
+                <a href="#" id="openEditModal"><i class="fas fa-edit"></i> Editar Perfil</a>
             </div>
         </div>
 
@@ -355,10 +463,10 @@
                 <section class="data-block fixed-data">
                     <h3><i class="fas fa-info-circle"></i> Dados Básicos</h3>
                     <ul>
-                        <li><strong>Espécie:</strong> Cachorro</li>
-                        <li><strong>Raça:</strong> Pitbull</li>
-                        <li><strong>Nascimento:</strong> 15/05/2022</li>
-                        <li><strong>Veterinário Principal:</strong> Dr. Carlos Souza</li>
+                        <li><strong>Espécie:</strong> <span id="pet-species">-</span></li>
+                        <li><strong>Raça:</strong> <span id="pet-breed">-</span></li>
+                        <li><strong>Nascimento:</strong> <span id="pet-birth">-</span></li>
+                        <li><strong>Veterinário Principal:</strong> <span id="pet-vet">-</span></li>
                     </ul>
                 </section>
 
@@ -386,6 +494,162 @@
         </div>
     </main>
     
+    <script>
+        // Parse o query param `id` da URL
+        function getQueryParam(name) {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get(name);
+        }
+
+        async function carregarDetalhes() {
+            const id = getQueryParam('id');
+            if (!id) {
+                document.getElementById('pet-name').textContent = 'Pet não especificado';
+                document.getElementById('pet-summary').textContent = '';
+                return;
+            }
+
+            try {
+                const res = await fetch(`http://localhost:5000/api/pets/${id}`);
+                if (!res.ok) {
+                    const err = await res.json().catch(()=>({message:'Erro'}));
+                    document.getElementById('pet-name').textContent = 'Pet não encontrado';
+                    document.getElementById('pet-summary').textContent = err.message || '';
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success || !data.pet) {
+                    document.getElementById('pet-name').textContent = 'Pet não encontrado';
+                    return;
+                }
+                const pet = data.pet;
+                // Armazena dados do pet globalmente para edição
+                window.currentPet = pet;
+                
+                // Preenche o header
+                document.getElementById('pet-name').textContent = pet.name || 'Sem nome';
+                const tipo = pet.type ? ` (${pet.type})` : '';
+                const idade = (pet.birth_date) ? pet.birth_date : '';
+                document.getElementById('pet-summary').textContent = `${pet.breed || 'Raça não informada'}${tipo} - ${idade}`;
+
+                // Preenche a lateral
+                document.getElementById('pet-species').textContent = pet.type || 'Não informado';
+                document.getElementById('pet-breed').textContent = pet.breed || 'Não informado';
+                document.getElementById('pet-birth').textContent = pet.birth_date || 'Não informado';
+                
+                // Buscar veterinário principal baseado nas vacinas
+                carregarVeterinarioPrincipal(id);
+
+                // Armazenar pet id nas setas para navegação (opcional)
+                document.getElementById('prev-pet').dataset.petId = id;
+                document.getElementById('next-pet').dataset.petId = id;
+
+            } catch (err) {
+                console.error('Erro ao carregar detalhes:', err);
+                document.getElementById('pet-name').textContent = 'Erro ao carregar detalhes';
+                document.getElementById('pet-summary').textContent = '';
+            }
+        }
+
+        // Função para carregar o veterinário principal baseado nas vacinas
+        async function carregarVeterinarioPrincipal(petId) {
+            try {
+                const res = await fetch(`http://localhost:5000/api/pets/${petId}/main-veterinarian`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.success && data.main_veterinarian) {
+                        document.getElementById('pet-vet').textContent = data.main_veterinarian;
+                        console.log(`[VET] Veterinário principal: ${data.main_veterinarian} (${data.frequency} vacinas)`);
+                    } else {
+                        document.getElementById('pet-vet').textContent = '-';
+                    }
+                } else {
+                    document.getElementById('pet-vet').textContent = '-';
+                }
+            } catch (err) {
+                console.error('Erro ao carregar veterinário principal:', err);
+                document.getElementById('pet-vet').textContent = '-';
+            }
+        }
+
+        // Controle do modal de edição
+        document.getElementById('openEditModal').addEventListener('click', function(e) {
+            e.preventDefault();
+            if (window.currentPet) {
+                // Preenche o formulário com os dados atuais
+                document.getElementById('editName').value = window.currentPet.name || '';
+                document.getElementById('editBreed').value = window.currentPet.breed || '';
+                document.getElementById('editType').value = window.currentPet.type || '';
+                document.getElementById('editBirthDate').value = window.currentPet.birth_date || '';
+                document.getElementById('editModal').style.display = 'block';
+            }
+        });
+
+        document.getElementById('closeEditModal').addEventListener('click', function() {
+            document.getElementById('editModal').style.display = 'none';
+            document.getElementById('editFormMessage').textContent = '';
+        });
+
+        window.addEventListener('click', function(event) {
+            if (event.target == document.getElementById('editModal')) {
+                document.getElementById('editModal').style.display = 'none';
+                document.getElementById('editFormMessage').textContent = '';
+            }
+        });
+
+        // Submissão do formulário de edição
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const id = getQueryParam('id');
+            if (!id) {
+                alert('ID do pet não encontrado');
+                return;
+            }
+
+            const nome = document.getElementById('editName').value;
+            const raca = document.getElementById('editBreed').value;
+            const especie = document.getElementById('editType').value;
+            const birth_date = document.getElementById('editBirthDate').value;
+            
+            const messageDiv = document.getElementById('editFormMessage');
+            messageDiv.textContent = 'Salvando...';
+            messageDiv.style.color = '#666';
+
+            try {
+                const response = await fetch(`http://localhost:5000/api/pets/${id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ nome, raca, especie, birth_date })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    messageDiv.textContent = 'Alterações salvas com sucesso!';
+                    messageDiv.style.color = 'green';
+                    
+                    // Recarrega os detalhes após 1 segundo
+                    setTimeout(function() {
+                        document.getElementById('editModal').style.display = 'none';
+                        messageDiv.textContent = '';
+                        carregarDetalhes(); // Recarrega a página com os novos dados
+                    }, 1000);
+                } else {
+                    messageDiv.textContent = result.message || 'Erro ao salvar alterações';
+                    messageDiv.style.color = 'red';
+                }
+            } catch (err) {
+                console.error('Erro ao salvar:', err);
+                messageDiv.textContent = 'Erro de conexão com o servidor';
+                messageDiv.style.color = 'red';
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', carregarDetalhes);
+    </script>
     <button id="prev-pet" class="full-width-nav-arrow" title="Pet Anterior">
         <i class="fas fa-chevron-left"></i>
     </button>

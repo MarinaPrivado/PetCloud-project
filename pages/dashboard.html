@@ -186,6 +186,173 @@
             margin-top: 40px; 
             background: transparent; 
         }
+
+        /* Modal de Novo Pet */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .novo-pet-form {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.3s ease;
+        }
+
+        .novo-pet-form h3 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            padding-right: 30px;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #FF9933;
+        }
+
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-submit,
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-submit {
+            background: #FF9933;
+            color: white;
+        }
+
+        .btn-submit:hover {
+            background: #e88520;
+        }
+
+        .btn-cancel {
+            background: #eee;
+            color: #333;
+        }
+
+        .btn-cancel:hover {
+            background: #ddd;
+        }
+
+        .mensagem-sucesso,
+        .mensagem-erro {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .mensagem-sucesso {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .mensagem-erro {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
     </style>
 </head>
 <body>
@@ -284,7 +451,7 @@
             <div class="action-column">
                 <section class="action-block">
                     <h3><i class="fas fa-bolt"></i> Ações Rápidas</h3>
-                    <a href="#" class="btn-action"><i class="fas fa-plus"></i> Adicionar Novo Pet</a>
+                    <a href="#" class="btn-action" onclick="abrirFormulario(); return false;"><i class="fas fa-plus"></i> Adicionar Novo Pet</a>
                     <a href="#" class="btn-action"><i class="fas fa-calendar-plus"></i> Agendar Próximo Banho</a>
                     <a href="#" class="btn-action"><i class="fas fa-plus-square"></i> Registrar Gasto</a>
                     <a href="#" class="btn-action"><i class="fas fa-file-export"></i> Exportar Histórico Completo</a>
@@ -297,5 +464,139 @@
     <footer>
         <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
     </footer>
+
+    <!-- Modal de Novo Pet -->
+    <div id="modalOverlay" class="modal-overlay" onclick="fecharModalSeBackdrop(event)">
+        <div class="novo-pet-form" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="fecharFormulario()">&times;</button>
+            <h3><i class="fas fa-plus-circle"></i> Adicionar Novo Pet</h3>
+            <div id="mensagemSucesso" class="mensagem-sucesso"></div>
+            <div id="mensagemErro" class="mensagem-erro"></div>
+            <form id="formPet" onsubmit="return false;">
+                <div class="form-group">
+                    <label for="nome">Nome do Pet *</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="especie">Espécie *</label>
+                    <select id="especie" name="especie" required>
+                        <option value="">Selecione...</option>
+                        <option value="Cachorro">Cachorro</option>
+                        <option value="Gato">Gato</option>
+                        <option value="Pássaro">Pássaro</option>
+                        <option value="Coelho">Coelho</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="raca">Raça *</label>
+                    <input type="text" id="raca" name="raca" required>
+                </div>
+                <div class="form-group">
+                    <label for="birth_date">Data de Nascimento *</label>
+                    <input type="date" id="birth_date" name="birth_date" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancel" onclick="fecharFormulario()">Cancelar</button>
+                    <button type="button" class="btn-submit" onclick="adicionarPet()">Adicionar Pet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function abrirFormulario() {
+            document.getElementById('modalOverlay').classList.add('show');
+            document.getElementById('mensagemSucesso').style.display = 'none';
+            document.getElementById('mensagemErro').style.display = 'none';
+            // Foca no primeiro campo
+            setTimeout(() => {
+                document.getElementById('nome').focus();
+            }, 300);
+        }
+
+        function fecharFormulario() {
+            document.getElementById('modalOverlay').classList.remove('show');
+            document.getElementById('formPet').reset();
+            document.getElementById('mensagemSucesso').style.display = 'none';
+            document.getElementById('mensagemErro').style.display = 'none';
+        }
+
+        function fecharModalSeBackdrop(event) {
+            // Fecha o modal apenas se clicar no backdrop (fundo escuro)
+            if (event.target.id === 'modalOverlay') {
+                fecharFormulario();
+            }
+        }
+
+        // Fecha o modal ao pressionar ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modal = document.getElementById('modalOverlay');
+                if (modal.classList.contains('show')) {
+                    fecharFormulario();
+                }
+            }
+        });
+
+        async function adicionarPet() {
+            const nome = document.getElementById('nome').value;
+            const especie = document.getElementById('especie').value;
+            const raca = document.getElementById('raca').value;
+            const birth_date = document.getElementById('birth_date').value;
+
+            // Validação básica
+            if (!nome || !especie || !raca || !birth_date) {
+                mostrarErro('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5000/api/pets', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        nome: nome,
+                        especie: especie,
+                        raca: raca,
+                        birth_date: birth_date
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    mostrarSucesso(`Pet "${nome}" adicionado com sucesso!`);
+                    document.getElementById('formPet').reset();
+                    
+                    // Após 2 segundos, redireciona para a página de listagem
+                    setTimeout(() => {
+                        window.location.href = 'listagem.html';
+                    }, 2000);
+                } else {
+                    const errorData = await response.json();
+                    mostrarErro(errorData.message || 'Erro ao adicionar pet. Tente novamente.');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                mostrarErro('Erro ao conectar com o servidor. Verifique se o backend está rodando.');
+            }
+        }
+
+        function mostrarSucesso(mensagem) {
+            const elemento = document.getElementById('mensagemSucesso');
+            elemento.textContent = mensagem;
+            elemento.style.display = 'block';
+            document.getElementById('mensagemErro').style.display = 'none';
+        }
+
+        function mostrarErro(mensagem) {
+            const elemento = document.getElementById('mensagemErro');
+            elemento.textContent = mensagem;
+            elemento.style.display = 'block';
+            document.getElementById('mensagemSucesso').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
