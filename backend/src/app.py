@@ -1,16 +1,25 @@
 
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, redirect, session, url_for
 from services.AuthService import AuthService
+from services.GmailOAuthService import gmail_service
 from flask_cors import CORS
 import os
+import secrets
+from datetime import datetime, timedelta
 from models.Pet import Pet
 from models.Vaccine import Vaccine
-from config.database import SessionLocal
+from models.User import User
+from models.PasswordReset import PasswordReset
+from config.database import SessionLocal, Base, engine
 
 
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'petcloud-secret-key-change-in-production')
 CORS(app)  # Enable CORS for all routes
+
+# Cria todas as tabelas (incluindo password_resets)
+Base.metadata.create_all(bind=engine)
 
 # Obtém o diretório raiz do projeto
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -437,6 +446,249 @@ def register():
         'message': message,
         'user': user.to_dict() if user else None
     }), 201
+
+
+# =========================================== 
+# Rotas de Recuperação de Senha com OAuth
+# ===========================================
+
+@app.route('/api/auth/oauth-status', methods=['GET'])
+def oauth_status():
+    """Verifica se o OAuth está configurado"""
+    is_auth = gmail_service.is_authenticated()
+    return jsonify({
+        'success': True,
+        'authenticated': is_auth,
+        'message': 'OAuth configurado' if is_auth else 'OAuth não configurado. Execute /api/auth/setup-oauth primeiro.'
+    })
+
+
+@app.route('/api/auth/setup-oauth', methods=['GET'])
+def setup_oauth():
+    """Inicia o fluxo OAuth - redireciona para a página de autorização do Google"""
+    redirect_uri = url_for('oauth_callback', _external=True)
+    auth_url, state = gmail_service.get_authorization_url(redirect_uri)
+    
+    # Salva o state na sessão para validação
+    session['oauth_state'] = state
+    
+    return redirect(auth_url)
+
+
+@app.route('/callback')
+def oauth_callback():
+    """Callback do OAuth - recebe o código de autorização e troca por token"""
+    # Verifica se houve erro
+    if 'error' in request.args:
+        return jsonify({
+            'success': False,
+            'message': f'Erro na autorização: {request.args.get("error")}'
+        }), 400
+    
+    # Obtém o código
+    code = request.args.get('code')
+    if not code:
+        return jsonify({
+            'success': False,
+            'message': 'Código de autorização não fornecido'
+        }), 400
+    
+    # Troca o código por token
+    redirect_uri = url_for('oauth_callback', _external=True)
+    try:
+        gmail_service.exchange_code_for_token(code, redirect_uri)
+        return '''
+        <html>
+            <head>
+                <title>Autorização Concluída - PetCloud</title>
+                <style>
+                    body {
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        display: flex;
+                        justify-content: center;
+                        align-items: center;
+                        height: 100vh;
+                        margin: 0;
+                        background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+                    }
+                    .container {
+                        background: white;
+                        padding: 40px;
+                        border-radius: 20px;
+                        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+                        text-align: center;
+                    }
+                    h1 { color: #FF9933; margin-bottom: 20px; }
+                    p { color: #666; margin-bottom: 30px; }
+                    .btn {
+                        background: #FF9933;
+                        color: white;
+                        padding: 12px 30px;
+                        border: none;
+                        border-radius: 50px;
+                        font-size: 16px;
+                        font-weight: 700;
+                        text-decoration: none;
+                        display: inline-block;
+                        cursor: pointer;
+                    }
+                    .btn:hover { background: #E68A2E; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h1>✅ Autorização Concluída!</h1>
+                    <p>O PetCloud agora pode enviar emails de recuperação de senha via Gmail.</p>
+                    <a href="/dashboard.html" class="btn">Voltar ao Dashboard</a>
+                </div>
+            </body>
+        </html>
+        '''
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Erro ao trocar código por token: {str(e)}'
+        }), 500
+
+
+@app.route('/api/auth/request-password-reset', methods=['POST'])
+def request_password_reset():
+    """Solicita redefinição de senha - gera token e envia email"""
+    data = request.get_json() or {}
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'success': False, 'message': 'Email é obrigatório.'}), 400
+    
+    db = SessionLocal()
+    try:
+        # Busca o usuário
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            # Por segurança, não revela se o email existe
+            print(f'[RESET] Tentativa de reset para email não cadastrado: {email}')
+            return jsonify({
+                'success': True,
+                'message': 'Se o e-mail estiver cadastrado, um link de recuperação foi enviado.'
+            }), 200
+        
+        # Gera token único
+        token = secrets.token_urlsafe(32)
+        expires = datetime.utcnow() + timedelta(hours=1)
+        
+        # Salva o token no banco
+        pr = PasswordReset(user_id=user.id, token=token, expires_at=expires)
+        db.add(pr)
+        db.commit()
+        db.refresh(pr)
+        
+        # Monta o link de reset
+        base_url = request.host_url.rstrip('/')
+        reset_link = f"{base_url}/recuperar-senha.html?token={token}"
+        
+        # Prepara o email
+        email_subject = 'Redefinição de senha - PetCloud'
+        email_body = f"""Olá {user.name},
+
+Você solicitou a redefinição de senha para sua conta no PetCloud.
+
+Para redefinir sua senha, acesse o link abaixo (válido por 1 hora):
+
+{reset_link}
+
+Se você não solicitou esta redefinição, ignore este e-mail.
+
+Atenciosamente,
+Equipe PetCloud 🐾"""
+        
+        # Tenta enviar o email via OAuth
+        if gmail_service.is_authenticated():
+            success = gmail_service.send_email(user.email, email_subject, email_body)
+            if success:
+                return jsonify({
+                    'success': True,
+                    'message': 'Link de recuperação enviado por e-mail.'
+                }), 200
+            else:
+                # Se falhar, retorna o link para teste (dev)
+                print(f'[RESET] Falha ao enviar email. Link de reset (dev): {reset_link}')
+                return jsonify({
+                    'success': True,
+                    'message': 'Erro ao enviar e-mail. Use o link abaixo para teste:',
+                    'reset_link': reset_link
+                }), 200
+        else:
+            # OAuth não configurado - retorna link para teste
+            print(f'[RESET] OAuth não configurado. Link de reset (dev): {reset_link}')
+            return jsonify({
+                'success': True,
+                'message': 'OAuth não configurado. Configure primeiro em /api/auth/setup-oauth. Link para teste:',
+                'reset_link': reset_link,
+                'oauth_setup_url': '/api/auth/setup-oauth'
+            }), 200
+    
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao criar token de reset: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao processar requisição'}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/auth/reset-password', methods=['POST'])
+def reset_password():
+    """Aplica a redefinição de senha usando o token"""
+    data = request.get_json() or {}
+    token = data.get('token')
+    new_password = data.get('new_password')
+    
+    if not token or not new_password:
+        return jsonify({
+            'success': False,
+            'message': 'Token e nova senha são obrigatórios.'
+        }), 400
+    
+    db = SessionLocal()
+    try:
+        # Busca o token
+        pr = db.query(PasswordReset).filter(PasswordReset.token == token).first()
+        if not pr:
+            return jsonify({'success': False, 'message': 'Token inválido.'}), 400
+        
+        # Verifica expiração
+        if pr.expires_at < datetime.utcnow():
+            db.delete(pr)
+            db.commit()
+            return jsonify({'success': False, 'message': 'Token expirado.'}), 400
+        
+        # Busca o usuário
+        user = db.query(User).filter(User.id == pr.user_id).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado.'}), 404
+        
+        # Atualiza a senha (usa hash do AuthService)
+        auth = AuthService()
+        hashed = auth._hash_password(new_password)
+        user.password = hashed
+        
+        # Remove o token
+        db.delete(pr)
+        db.commit()
+        
+        print(f'[RESET] Senha redefinida para usuário id={user.id}, email={user.email}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Senha redefinida com sucesso.'
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao redefinir senha: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao redefinir senha.'}), 500
+    finally:
+        db.close()
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -1,164 +1,302 @@
-<!-- c:\Users\Marina\Documents\Desenv. Web\PetCloud\templates\forgot_password.html -->
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Recuperar Senha - PetCloud</title>
-    <link rel="shortcut icon" href="{{ url_for('static', filename='imagens/favicon.png') }}" type="image/png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"> <!-- Mantido como link externo -->
+    <link rel="shortcut icon" href="imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+       
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            /* Fundo Azul Claro do PetCloud */
+            background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            display: flex;
+            justify-content: center; /* Centraliza horizontalmente */
+            align-items: center;     /* Centraliza verticalmente */
+            flex-direction: column;
+        }
         
-       
-       * {
-           margin: 0;
-           padding: 0;
-           box-sizing: border-box;
-           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-       }
+        /* =========================================== */
+        /* Container Principal do Formulário */
+        /* =========================================== */
+        .recovery-container {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px; /* Limita a largura para foco */
+            text-align: center;
+        }
 
-       body {
-           /* Fundo Azul Claro do PetCloud */
-           background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
-           min-height: 100vh;
-           color: #1a1a1a;
-           display: flex;
-           justify-content: center; /* Centraliza horizontalmente */
-           align-items: center;     /* Centraliza verticalmente */
-           flex-direction: column;
-       }
-       
-       /* =========================================== */
-       /* Container Principal do Formulário */
-       /* =========================================== */
-       .recovery-container {
-           background: #ffffff;
-           padding: 40px;
-           border-radius: 20px;
-           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-           width: 90%;
-           max-width: 400px; /* Limita a largura para foco */
-           text-align: center;
-       }
+        .recovery-container h1 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #FF9933; /* Laranja de destaque */
+            margin-bottom: 10px;
+        }
 
-       .recovery-container h1 {
-           font-size: 28px;
-           font-weight: 800;
-           color: #FF9933; /* Laranja de destaque */
-           margin-bottom: 10px;
-       }
+        .recovery-container p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 15px;
+        }
 
-       .recovery-container p {
-           color: #666;
-           margin-bottom: 30px;
-           font-size: 15px;
-       }
+        /* =========================================== */
+        /* Estilos do Formulário */
+        /* =========================================== */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
 
-       /* =========================================== */
-       /* Estilos do Formulário */
-       /* =========================================== */
-       .form-group {
-           margin-bottom: 20px;
-           text-align: left;
-       }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
 
-       .form-group label {
-           display: block;
-           margin-bottom: 8px;
-           font-weight: 600;
-           color: #333;
-       }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
 
-       .form-group input {
-           width: 100%;
-           padding: 12px;
-           border: 1px solid #ccc;
-           border-radius: 8px;
-           font-size: 16px;
-           transition: border-color 0.3s;
-       }
+        .form-group input:focus {
+            border-color: #a8e6f5; /* Azul claro no foco */
+            outline: none;
+            box-shadow: 0 0 5px rgba(168, 230, 245, 0.5);
+        }
 
-       .form-group input:focus {
-           border-color: #a8e6f5; /* Azul claro no foco */
-           outline: none;
-           box-shadow: 0 0 5px rgba(168, 230, 245, 0.5);
-       }
+        /* Botão Principal */
+        .btn-submit {
+            width: 100%;
+            background: #FF9933; /* Laranja de Ação */
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
 
-       /* Botão Principal */
-       .btn-submit {
-           width: 100%;
-           background: #FF9933; /* Laranja de Ação */
-           color: white;
-           padding: 12px;
-           border: none;
-           border-radius: 50px;
-           font-size: 18px;
-           font-weight: 700;
-           cursor: pointer;
-           transition: background 0.3s;
-           margin-top: 10px;
-       }
+        .btn-submit:hover {
+            background: #E68A2E;
+        }
 
-       .btn-submit:hover {
-           background: #E68A2E;
-       }
+        /* Link de Retorno */
+        .back-link {
+            display: block;
+            margin-top: 25px;
+            color: #1a1a1a;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        
+        .back-link:hover {
+            color: #FF9933;
+        }
 
-       /* Link de Retorno */
-       .back-link {
-           display: block;
-           margin-top: 25px;
-           color: #1a1a1a;
-           text-decoration: none;
-           font-size: 14px;
-       }
-       
-       .back-link:hover {
-           color: #FF9933;
-       }
-
-       /* Ícone do PetCloud */
-       .logo {
-           font-size: 40px;
-           color: #1a1a1a;
-           margin-bottom: 20px;
-       }
-   
-        .flash-messages { list-style: none; padding: 0; margin-bottom: 20px; }
-        .flash-messages li { padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-        .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .flash-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .flash-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        /* Ícone do PetCloud */
+        .logo {
+            font-size: 40px;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
+    
     <div class="recovery-container">
+        
         <div class="logo">🐾</div>
-        <h1>Recuperar Sua Senha</h1>
-        <p>Informe o e-mail cadastrado. Enviaremos um link para redefinição de senha.</p>
+        
+        <!-- Estado: Solicitar reset -->
+        <div id="request-state">
+            <h1>Recuperar Sua Senha</h1>
+            <p>Informe o e-mail cadastrado. Enviaremos um link para redefinição de senha.</p>
 
-        <!-- Bloco para exibir mensagens flash do Flask -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flash-messages">
-                {% for category, message in messages %}
-                    <li class="flash-{{ category }}">{{ message }}</li> <!-- As classes flash-success, flash-warning, etc. já estão no seu CSS -->
-                {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
+            <form id="request-form">
+                <div class="form-group">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-envelope"></i> Enviar Link de Acesso
+                </button>
+            </form>
+            
+            <a href="/login.html" class="back-link">
+                <i class="fas fa-arrow-left"></i> Voltar para o Login
+            </a>
+        </div>
 
-        <form action="{{ url_for('forgot_password') }}" method="POST">
-            <div class="form-group">
-                <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" placeholder="seu.email@exemplo.com" required>
-            </div>
-            <button type="submit" class="btn-submit">
-                <i class="fas fa-envelope"></i> Enviar Link de Acesso
-            </button>
-        </form>
-        <a href="{{ url_for('login') }}" class="back-link">
-            <i class="fas fa-arrow-left"></i> Voltar para o Login
-        </a>
+        <!-- Estado: Redefinir senha (quando token presente) -->
+        <div id="reset-state" style="display:none;">
+            <h1>Redefinir Senha</h1>
+            <p>Digite sua nova senha abaixo.</p>
+
+            <form id="reset-form">
+                <div class="form-group">
+                    <label for="new_password">Nova senha</label>
+                    <input type="password" id="new_password" name="new_password" placeholder="Digite a nova senha" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirm_password">Confirmar senha</label>
+                    <input type="password" id="confirm_password" name="confirm_password" placeholder="Confirme a nova senha" required minlength="6">
+                </div>
+                
+                <button type="submit" class="btn-submit">
+                    Redefinir Senha
+                </button>
+            </form>
+            
+            <a href="/login.html" class="back-link">
+                <i class="fas fa-arrow-left"></i> Voltar para o Login
+            </a>
+        </div>
+
+        <!-- Mensagens -->
+        <div id="message" style="margin-top:20px; padding:15px; border-radius:8px; display:none;"></div>
+
     </div>
+
+    <script>
+        // Função para obter parâmetros da URL
+        function getQueryParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // Função para mostrar mensagem
+        function showMessage(text, isError = false) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerText = text;
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = isError ? '#f8d7da' : '#d4edda';
+            messageDiv.style.color = isError ? '#721c24' : '#155724';
+            messageDiv.style.border = isError ? '1px solid #f5c6cb' : '1px solid #c3e6cb';
+        }
+
+        // Verifica se há token na URL
+        const token = getQueryParam('token');
+        const requestState = document.getElementById('request-state');
+        const resetState = document.getElementById('reset-state');
+
+        if (token) {
+            // Mostrar formulário de redefinição
+            requestState.style.display = 'none';
+            resetState.style.display = 'block';
+        }
+
+        // Form: Solicitar recuperação
+        document.getElementById('request-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            showMessage('Enviando solicitação...', false);
+            
+            try {
+                const response = await fetch('/api/auth/request-password-reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage(data.message, false);
+                    
+                    // Se retornou um link para teste (dev), mostrar
+                    if (data.reset_link) {
+                        const linkDiv = document.createElement('div');
+                        linkDiv.style.marginTop = '15px';
+                        linkDiv.innerHTML = `<a href="${data.reset_link}" style="color: #FF9933; font-weight: 600;">Clique aqui para redefinir (modo dev)</a>`;
+                        document.getElementById('message').appendChild(linkDiv);
+                    }
+                    
+                    // Se OAuth não configurado, mostrar link
+                    if (data.oauth_setup_url) {
+                        const oauthDiv = document.createElement('div');
+                        oauthDiv.style.marginTop = '15px';
+                        oauthDiv.innerHTML = `<a href="${data.oauth_setup_url}" style="color: #FF9933; font-weight: 600;">Configurar OAuth primeiro</a>`;
+                        document.getElementById('message').appendChild(oauthDiv);
+                    }
+                } else {
+                    showMessage(data.message || 'Erro ao solicitar recuperação.', true);
+                }
+            } catch (error) {
+                showMessage('Erro de conexão. Tente novamente.', true);
+            }
+        });
+
+        // Form: Redefinir senha
+        document.getElementById('reset-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const newPassword = document.getElementById('new_password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            
+            if (newPassword !== confirmPassword) {
+                showMessage('As senhas não coincidem.', true);
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showMessage('A senha deve ter pelo menos 6 caracteres.', true);
+                return;
+            }
+            
+            showMessage('Redefinindo senha...', false);
+            
+            try {
+                const response = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        token: token, 
+                        new_password: newPassword 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showMessage('✅ ' + data.message + ' Redirecionando...', false);
+                    setTimeout(() => {
+                        window.location.href = '/login.html';
+                    }, 2000);
+                } else {
+                    showMessage(data.message || 'Erro ao redefinir senha.', true);
+                }
+            } catch (error) {
+                showMessage('Erro de conexão. Tente novamente.', true);
+            }
+        });
+    </script>
+
 </body>
 </html>

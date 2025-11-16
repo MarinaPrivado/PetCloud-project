@@ -1,5 +1,6 @@
 
 from models.Pet import Pet
+from models.Vaccine import Vaccine  # Importar Vaccine para resolver a relação
 from config.database import SessionLocal, Base, engine
 
 # Garante que as tabelas existam no banco antes de consultar

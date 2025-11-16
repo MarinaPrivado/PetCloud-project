@@ -6,6 +6,7 @@ from config.database import Base
 # Import models
 from .User import User
 from .Pet import Pet
+from .PasswordReset import PasswordReset
 
 
 try:
@@ -15,5 +16,7 @@ except ImportError:
 if not TYPE_CHECKING:
     User.pets = relationship("Pet", back_populates="owner", lazy="joined")
     Pet.owner = relationship("User", back_populates="pets", lazy="joined")
+    User.password_resets = relationship("PasswordReset", back_populates="user", lazy="select")
+    PasswordReset.user = relationship("User", back_populates="password_resets", lazy="joined")
 
-__all__ = ['User', 'Pet', 'Base']
+__all__ = ['User', 'Pet', 'PasswordReset', 'Base']
