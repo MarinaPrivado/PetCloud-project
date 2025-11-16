@@ -1,0 +1,23 @@
+# Ambiente Virtual
+# Impede que a pasta do ambiente virtual seja enviada.
+venv/
+
+# Arquivos de cache e compilados do Python
+# Gerados automaticamente pelo Python, não precisam ser versionados.
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Arquivos de configuração de Editores e IDEs
+# Configurações específicas do seu computador.
+.vscode/
+.idea/
+
+# Arquivos de sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos de ambiente (Environment)
+# Contêm segredos e configurações locais. NUNCA devem ser versionados.
+.env
+

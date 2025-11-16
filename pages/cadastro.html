@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro - PetCloud</title>
+  <link rel="shortcut icon" href="../imagens/favicon.png" type="image/png">
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="../static/js/auth.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: #f5f5f5;
+      border-radius: 40px;
+      display: flex;
+      max-width: 1200px;
+      width: 100%;
+      min-height: 600px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    /* Lado esquerdo com imagem */
+    .left-panel {
+      flex: 1;
+      background: url("../imagens/pexels-photo4passion-1828875(ft para pg cadastro).jpg") no-repeat center center/cover;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Lado direito com formulário */
+    .right-panel {
+      flex: 1;
+      padding: 80px 60px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+      background-color: #fff;
+    }
+
+    h1 {
+      font-size: 40px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #1a1a1a;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #666;
+      margin-bottom: 40px;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+    }
+
+    label {
+      display: block;
+      font-size: 16px;
+      color: #1a1a1a;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 15px 0;
+      border: none;
+      border-bottom: 2px solid #ddd;
+      background: transparent;
+      font-size: 16px;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-bottom-color: #2196f3;
+    }
+
+    .btn-cadastrar {
+      width: 100%;
+      padding: 18px;
+      background: #1a1a1a;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.3s;
+    }
+
+    .btn-cadastrar:hover {
+      background: #333;
+    }
+
+    .login-link {
+      text-align: center;
+      margin-top: 30px;
+      color: #333;
+      font-size: 15px;
+    }
+
+    .login-link a {
+      color: #1a1a1a;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 968px) {
+      .container {
+        flex-direction: column;
+      }
+
+      .left-panel {
+        height: 250px;
+      }
+
+      .right-panel {
+        padding: 40px 30px;
+      }
+
+      h1 {
+        font-size: 32px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Lado da imagem -->
+    <div class="left-panel"></div>
+
+    <!-- Lado do formulário -->
+    <div class="right-panel">
+      <h1>Crie sua conta</h1>
+      <p class="subtitle">Organize a vida do seu pet com carinho 💙</p>
+
+      <form id="registrationForm" onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label for="nome">Nome completo</label>
+          <input type="text" id="nome" name="nome" required>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input type="password" id="senha" name="senha" required minlength="8">
+        </div>
+
+        <div class="form-group">
+          <label for="confirm-password">Confirmar Senha</label>
+          <input type="password" id="confirm-password" name="confirm-password" required minlength="8">
+        </div>
+
+        <div id="errorMessage" style="color: red; margin-bottom: 10px; display: none;"></div>
+
+        <button type="submit" class="btn-cadastrar">Cadastrar</button>
+      </form>
+
+      <script>
+        async function handleRegister(event) {
+          event.preventDefault();
+          
+          const name = document.getElementById('nome').value;
+          const email = document.getElementById('email').value;
+          const password = document.getElementById('senha').value;
+          const confirmPassword = document.getElementById('confirm-password').value;
+          const errorMessage = document.getElementById('errorMessage');
+          
+          // Validações do lado do cliente
+          if (password !== confirmPassword) {
+            errorMessage.textContent = 'As senhas não coincidem';
+            errorMessage.style.display = 'block';
+            return;
+          }
+          
+          if (password.length < 8) {
+            errorMessage.textContent = 'A senha deve ter pelo menos 8 caracteres';
+            errorMessage.style.display = 'block';
+            return;
+          }
+          
+          // Tenta registrar o usuário
+          const result = await register(name, email, password);
+          
+          if (result.success) {
+            // Save user data and redirect
+            saveUserData(result.user);
+            window.location.href = 'dashboard.html';
+          } else {
+            // Show error message
+            errorMessage.textContent = result.message;
+            errorMessage.style.display = 'block';
+          }
+        }
+
+        // Removido redirecionamento automático para dashboard
+      </script>
+
+      <p class="login-link">
+        Já tem uma conta? <a href="login.html">Faça login</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

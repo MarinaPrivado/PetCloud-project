@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concursos Pet - PetCloud</title>
+    <link rel="shortcut icon" href="../imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* =========================================== */
+        /* Estilos Globais e Paleta de Cores (Mantidos) */
+        /* =========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            /* Fundo Azul Claro do PetCloud */
+            background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        /* Cabeçalho (MANTIDO) */
+        header {
+            background-color: #1a1a1a; 
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        header nav ul { list-style: none; display: flex; gap: 25px; }
+        header nav ul li a { color: white; text-decoration: none; font-weight: 500; padding: 5px 0; }
+        header nav ul li a:hover { color: #a8e6f5; }
+        
+        /* =========================================== */
+        /* Seção Principal de Concursos */
+        /* =========================================== */
+        .contest-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .contest-header h1 {
+            font-size: 40px;
+            font-weight: 800;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+
+        .contest-header p {
+            font-size: 18px;
+            color: #666;
+        }
+        
+        /* Destaque do Desafio Atual */
+        .challenge-banner {
+            background: #fff;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 40px;
+            border: 3px solid #FF9933; /* Destaque Laranja */
+            text-align: center;
+        }
+
+        .challenge-banner h2 {
+            font-size: 30px;
+            color: #FF9933;
+            margin-bottom: 10px;
+        }
+        
+        .challenge-banner p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        /* Botão de Ação Primária */
+        .btn-primary {
+            background: #1a1a1a; 
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+            margin-top: 10px;
+        }
+        .btn-primary:hover {
+            background: #FF9933;
+        }
+
+        /* =========================================== */
+        /* Grid de Submissões (Cards de Fotos) */
+        /* =========================================== */
+        .submissions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        .submission-card {
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .submission-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .photo-placeholder {
+            width: 100%;
+            height: 200px;
+            background: #f0f8ff; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 50px;
+        }
+
+        .submission-details {
+            padding: 15px;
+        }
+
+        .submission-details h4 {
+            font-size: 20px;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+        }
+        
+        .submission-details p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        /* Botão de Votação no Card */
+        .btn-vote {
+            display: inline-block;
+            background: #a8e6f5; /* Azul claro do fundo */
+            color: #1a1a1a;
+            padding: 8px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .btn-vote i {
+            margin-right: 5px;
+            color: #FF9933;
+        }
+
+        .btn-vote:hover {
+            background: #FF9933;
+            color: white;
+        }
+
+        /* Rodapé (MANTIDO) */
+        footer {
+            text-align: center;
+            color: #333; 
+            padding: 20px 0;
+            font-size: 14px;
+            margin-top: 40px; 
+            background: transparent; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PetCloud</h1>
+        <nav>
+            <ul>
+                <li><a href="/dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="/listagem.html" class="nav-link">Pets</a></li>
+                <li><a href="/concurso.html" class="nav-link">Concursos Pets</a></li>
+                <li><a href="/" onclick="logout(); return false;">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <script>
+            document.querySelectorAll('.nav-link').forEach(function(link) {
+                if (window.location.pathname === link.getAttribute('href')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        </script>
+        <div class="contest-header">
+            <h1>Comunidade de Desafios Pet <i class="fas fa-trophy"></i></h1>
+            <p>Participe dos desafios temáticos, vote nos seus favoritos e celebre a criatividade e o afeto com seu pet!</p>
+        </div>
+
+        <section class="challenge-banner">
+            <h2>🏆 Desafio Atual: Sono Louco! <i class="fas fa-bed"></i></h2>
+            <p>Mostre o jeito mais inusitado, hilário ou desconfortável que seu pet consegue dormir. A votação se encerra em **48 horas**!</p>
+            <a href="#" class="btn-primary"><i class="fas fa-camera-retro"></i> Enviar Minha Foto</a>
+        </section>
+
+        <section>
+            <h3 style="font-size: 24px; margin-bottom: 20px; font-weight: 700;">Galeria de Submissões</h3>
+
+            <div class="submissions-grid">
+                <div class="submission-card">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i></div>
+                    <div class="submission-details">
+                        <h4>Fido (Dormindo de cabeça para baixo)</h4>
+                        <p>Submetido por: @TutordoFido</p>
+                        <a href="#" class="btn-vote"><i class="fas fa-heart"></i> Votar (245)</a>
+                    </div>
+                </div>
+
+                <div class="submission-card">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i></div>
+                    <div class="submission-details">
+                        <h4>mimi (No meio da lavanderia)</h4>
+                        <p>Submetido por: @MiauLover</p>
+                        <a href="#" class="btn-vote"><i class="fas fa-heart"></i> Votar (310)</a>
+                    </div>
+                </div>
+
+                <div class="submission-card">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i></div>
+                    <div class="submission-details">
+                        <h4>Max (Abraçando o sapato)</h4>
+                        <p>Submetido por: @MaxPower</p>
+                        <a href="#" class="btn-vote"><i class="fas fa-heart"></i> Votar (198)</a>
+                    </div>
+                </div>
+        </div>
+            </section>
+        
+        <section style="margin-top: 50px; padding: 20px; background: #fff; border-radius: 15px;">
+            <h3 style="font-size: 20px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Desafios Anteriores</h3>
+            <p style="color: #666; font-size: 15px;">**Vencedor do "Pet Saudável":** Thor (@SaudePet) | **Vencedor do "Brinquedo Favorito":** Zoe (@ZoePlay)</p>
+        </section>
+        
+    </main>
+
+    <footer>
+        <p>&copy; 2025 PetCloud. Incentive a participação e o cuidado responsável.</p>
+    </footer>
+</body>
+</html>

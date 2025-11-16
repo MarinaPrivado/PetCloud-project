@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adicionar Novo Pet - PetCloud</title>
+    <link rel="shortcut icon" href="imagens/favicon.png" type="image/png">
+    <!-- Ícones Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* =========================================== */
+        /* Estilos Globais e Paleta de Cores */
+        /* =========================================== */
+        :root {
+            --cor-fundo: #c4e9f7; /* Azul Claro */
+            --cor-primaria: #1a1a1a; /* Preto/Chumbo */
+            --cor-destaque: #FF9933; /* Laranja */
+            --cor-secundaria: #a8e6f5; /* Azul Claro Secundário */
+            --cor-card: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--cor-secundaria) 0%, var(--cor-fundo) 100%);
+            min-height: 100vh;
+            color: var(--cor-primaria);
+            display: flex;
+            flex-direction: column;
+        }
+
+        main {
+            flex-grow: 1;
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+            width: 100%;
+        }
+
+        /* =========================================== */
+        /* Cabeçalho Padrão PetCloud (Adaptado) */
+        /* =========================================== */
+        header {
+            background-color: var(--cor-primaria);
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+        header h1 { font-size: 28px; }
+        header nav ul { list-style: none; display: flex; gap: 25px; }
+        header nav ul li a { color: white; text-decoration: none; font-weight: 500; padding: 5px 0; transition: color 0.3s; }
+        header nav ul li a:hover { color: var(--cor-destaque); }
+
+        /* =========================================== */
+        /* Estilo do Formulário */
+        /* =========================================== */
+        .pet-form-container {
+            background: var(--cor-card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .pet-form-container h2 {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: var(--cor-destaque);
+            text-align: center;
+        }
+        
+        .pet-form-container > p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .full-width {
+                grid-column: span 2;
+            }
+        }
+
+        .form-group {
+            margin-bottom: 0; /* Controlado pelo gap do grid */
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--cor-primaria);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .form-group label i {
+            color: var(--cor-destaque);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--cor-destaque);
+            box-shadow: 0 0 0 3px rgba(255, 153, 51, 0.2);
+            outline: none;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Foto de Perfil (Área de Upload) */
+        .photo-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s, background-color 0.3s;
+            grid-column: span 1; /* Permite que fique lado a lado em desktop */
+        }
+
+        .photo-upload-area:hover {
+            border-color: var(--cor-destaque);
+            background-color: #fffaf5;
+        }
+
+        .photo-upload-area i {
+            font-size: 36px;
+            color: #ccc;
+            margin-bottom: 10px;
+        }
+
+        .photo-upload-area p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        /* Botões de Ação */
+        .form-actions {
+            grid-column: span 2;
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: background 0.3s, transform 0.1s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-cancel {
+            background: #eee;
+            color: #666;
+        }
+        .btn-cancel:hover {
+            background: #ddd;
+        }
+
+        .btn-submit-pet {
+            background: var(--cor-primaria);
+            color: white;
+        }
+
+        .btn-submit-pet:hover {
+            background: var(--cor-destaque);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(255, 153, 51, 0.3);
+        }
+
+        /* Rodapé Padrão PetCloud (Mantido) */
+        footer {
+            text-align: center;
+            color: #333; 
+            padding: 20px 0;
+            font-size: 14px;
+            margin-top: 40px; 
+            background: transparent; 
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PetCloud</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="listagem.html" style="color: var(--cor-destaque); border-bottom: 2px solid var(--cor-destaque);">Pets</a></li>
+                <li><a href="concursos.html">Concursos Pets</a></li>
+                <li><a href="index.html">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="pet-form-container">
+            <h2><i class="fas fa-paw"></i> Cadastrar Novo Pet</h2>
+            <p>Conte-nos um pouco sobre seu novo melhor amigo para começar a usufruir de todas as funcionalidades do PetCloud.</p>
+
+            <form action="/adicionar-pet" method="POST" enctype="multipart/form-data">
+                <div class="form-grid">
+                    
+                    <!-- 1. Foto de Perfil -->
+                    <div class="form-group">
+                        <label for="foto"><i class="fas fa-camera"></i> Foto de Perfil (Opcional)</label>
+                        <div class="photo-upload-area" onclick="document.getElementById('foto').click()">
+                            <i class="fas fa-upload"></i>
+                            <p>Clique para selecionar uma imagem ou arraste e solte aqui.</p>
+                        </div>
+                        <input type="file" id="foto" name="foto" accept="image/*" style="display: none;">
+                    </div>
+
+                    <!-- 2. Detalhes Básicos -->
+                    <div class="info-details-column">
+                        <div class="form-group">
+                            <label for="nome"><i class="fas fa-signature"></i> Nome do Pet</label>
+                            <input type="text" id="nome" name="nome" required placeholder="Ex: Thor, Mia, Pipoca">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="especie"><i class="fas fa-cat"></i> Espécie</label>
+                            <select id="especie" name="especie" required>
+                                <option value="" disabled selected>Selecione a espécie...</option>
+                                <option value="Cachorro">Cachorro</option>
+                                <option value="Gato">Gato</option>
+                                <option value="Pássaro">Pássaro</option>
+                                <option value="Peixe">Peixe</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="raca"><i class="fas fa-tag"></i> Raça (Opcional)</label>
+                            <input type="text" id="raca" name="raca" placeholder="Ex: Golden Retriever, Siamês, SRD">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="data_nascimento"><i class="fas fa-birthday-cake"></i> Data de Nascimento (Estimada)</label>
+                            <input type="date" id="data_nascimento" name="data_nascimento">
+                        </div>
+                    </div>
+
+                    <!-- 3. Descrição/Bio (Largura Total) -->
+                    <div class="form-group full-width">
+                        <label for="descricao"><i class="fas fa-scroll"></i> Pequena Biografia ou Descrição</label>
+                        <textarea id="descricao" name="descricao" placeholder="Conte-nos sobre a personalidade, gostos e manias do seu pet!"></textarea>
+                    </div>
+
+                    <!-- 4. Ações do Formulário -->
+                    <div class="form-actions">
+                        <a href="listagem.html" class="btn btn-cancel">Cancelar</a>
+                        <button type="submit" class="btn btn-submit-pet"><i class="fas fa-save"></i> Salvar Pet</button>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 PetCloud. Cuidando dos seus melhores amigos.</p>
+    </footer>
+</body>
+</html>
