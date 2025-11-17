@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listagem de Pets - PetCloud</title>
+    <link rel="shortcut icon" href="imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/carrossel.css">
+    <style>
+        
+        header {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            gap: 25px;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+           
+        }
+
+        header nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        header nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s;
+            padding: 5px 0;
+        }
+
+        header nav ul li a:hover, 
+        header nav ul li a[aria-current="page"] {
+            color: #a8e6f5;
+        }
+
+        main {
+            max-width: 1400px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        section {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .add-pet-btn {
+            display: inline-block;
+            background: #FF9933;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+
+        .add-pet-btn:hover {
+            background: #E68A2E;
+        }
+
+        
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🐾 PetCloud</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="listagem.html" aria-current="page" style="color: #FF9933; border-bottom: 2px solid #FF9933;">Pets</a></li>
+                <li><a href="concurso.html">Concursos Pets</a></li>
+                <li><a href="index.html">Sair</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section>
+            <h2>Meus Pets Cadastrados</h2>
+            <p>Visualize todos os seus pets e acesse o diário completo de saúde e bem-estar de cada um.</p>
+            <a href="novo_pet.html" class="add-pet-btn">+ Adicionar Novo Pet</a>
+        </section>
+
+        <!-- CARROSSEL MODERNO --> 
+        <div class="carousel-container">
+            <div class="carousel-track" id="carouselTrack">
+                
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200');">
+                    <div class="slide-content">
+                        <h3>Fido</h3>
+                        <p>Pitbull • 3 anos • Cheio de energia e amor</p>
+                        <a href="detalhes-fido.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1574158622682-e40e69881006?w=1200');">
+                    <div class="slide-content">
+                        <h3>Mimi</h3>
+                        <p>Siamês • 2 anos • Elegante e independente</p>
+                        <a href="detalhes-mimi.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=1200');">
+                    <div class="slide-content">
+                        <h3>Bob</h3>
+                        <p>Poodle • 1 ano • Brincalhão e inteligente</p>
+                        <a href="detalhes-bob.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1200');">
+                    <div class="slide-content">
+                        <h3>Luna</h3>
+                        <p>Gata Vira-Lata • 5 meses • Curiosa e carinhosa</p>
+                        <a href="detalhes-luna.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1552053831-71594a27632d?w=1200');">
+                    <div class="slide-content">
+                        <h3>Rex</h3>
+                        <p>Labrador • 7 anos • Leal e companheiro</p>
+                        <a href="detalhes-rex.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=1200');">
+                    <div class="slide-content">
+                        <h3>Max</h3>
+                        <p>Golden Retriever • 4 anos • Alegre e amigável</p>
+                        <a href="detalhes-max.html" class="slide-btn">Ver Detalhes</a>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Botões de Navegação -->
+            <button class="nav-arrow prev" id="prevBtn">‹</button>
+            <button class="nav-arrow next" id="nextBtn">›</button>
+
+            <!-- Indicadores -->
+            <div class="carousel-dots" id="carouselDots"></div>
+        </div>
+
+    </main>
+
+    <footer>
+        <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const track = document.getElementById('carouselTrack');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const dotsContainer = document.getElementById('carouselDots');
+            
+            const slides = track.querySelectorAll('.carousel-slide');
+            const totalSlides = slides.length;
+            let currentIndex = 0;
+
+            // Criar dots
+            slides.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.classList.add('dot');
+                if (index === 0) dot.classList.add('active');
+                dot.addEventListener('click', () => goToSlide(index));
+                dotsContainer.appendChild(dot);
+            });
+
+            const dots = dotsContainer.querySelectorAll('.dot');
+
+            function updateCarousel() {
+                const offset = -currentIndex * 630; // 600px (width) + 30px (gap)
+                track.style.transform = `translateX(calc(-50% + ${offset}px))`;
+                
+                // Atualizar dots
+                dots.forEach((dot, index) => {
+                    dot.classList.toggle('active', index === currentIndex);
+                });
+
+                // Atualizar classe active nos slides
+                slides.forEach((slide, index) => {
+                    slide.classList.toggle('active', index === currentIndex);
+                });
+            }
+
+            function goToSlide(index) {
+                currentIndex = index;
+                updateCarousel();
+            }
+
+            function nextSlide() {
+                currentIndex = (currentIndex + 1) % totalSlides;
+                updateCarousel();
+            }
+
+            function prevSlide() {
+                currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+                updateCarousel();
+            }
+
+            nextBtn.addEventListener('click', nextSlide);
+            prevBtn.addEventListener('click', prevSlide);
+
+            // Inicializar slides
+            updateCarousel();
+
+            // Suporte para swipe em mobile
+            let touchStartX = 0;
+            let touchEndX = 0;
+
+            track.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            });
+
+            track.addEventListener('touchend', (e) => {
+                touchEndX = e.changedTouches[0].screenX;
+                handleSwipe();
+            });
+
+            function handleSwipe() {
+                if (touchStartX - touchEndX > 50) {
+                    nextSlide();
+                }
+                if (touchEndX - touchStartX > 50) {
+                    prevSlide();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
