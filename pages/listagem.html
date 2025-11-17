@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listagem de Pets - PetCloud</title>
+<<<<<<< HEAD
     <link rel="shortcut icon" href="imagens/favicon.png" type="image/png">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/carrossel.css">
@@ -17,12 +18,48 @@
             align-items: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             gap: 25px;
+=======
+    <link rel="shortcut icon" href="../imagens/favicon.png" type="image/png">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        /* =========================================== */
+        /* Estilos Globais e Paleta de Cores */
+        /* =========================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body {
+            /* Fundo Azul Claro do PetCloud */
+            background: linear-gradient(135deg, #a8e6f5 0%, #c4e9f7 100%);
+            min-height: 100vh;
+            color: #1a1a1a;
+        }
+
+        /* =========================================== */
+        /* Cabeçalho (Header) */
+        /* =========================================== */
+        header {
+            background-color: #1a1a1a; /* Contraste forte */
+            color: white;
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
         }
 
         header h1 {
             font-size: 24px;
             font-weight: 700;
+<<<<<<< HEAD
            
+=======
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
         }
 
         header nav ul {
@@ -41,17 +78,32 @@
 
         header nav ul li a:hover, 
         header nav ul li a[aria-current="page"] {
+<<<<<<< HEAD
             color: #a8e6f5;
         }
 
         main {
             max-width: 1400px;
+=======
+            color: #a8e6f5; /* Destaque na cor da "Nuvem" */
+        }
+
+        /* =========================================== */
+        /* Conteúdo Principal (Main) */
+        /* =========================================== */
+        main {
+            max-width: 1200px;
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
             margin: 40px auto;
             padding: 0 20px;
         }
 
         section {
+<<<<<<< HEAD
             background: rgba(255, 255, 255, 0.9);
+=======
+            background: rgba(255, 255, 255, 0.9); /* Fundo branco semi-transparente */
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
             padding: 30px;
             border-radius: 20px;
             margin-bottom: 30px;
@@ -65,9 +117,16 @@
             color: #1a1a1a;
         }
 
+<<<<<<< HEAD
         .add-pet-btn {
             display: inline-block;
             background: #FF9933;
+=======
+        /* Botão Adicionar (Um elemento que seria comum em listagens) */
+        .add-pet-btn {
+            display: inline-block;
+            background: #FF9933; /* Laranja de Ação */
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
             color: white;
             padding: 12px 25px;
             border-radius: 50px;
@@ -81,7 +140,91 @@
             background: #E68A2E;
         }
 
+<<<<<<< HEAD
         
+=======
+        /* =========================================== */
+        /* Listagem de Pets (Cards) */
+        /* =========================================== */
+        .pet-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .pet-card {
+            /* Fundo Rosa Suave (Cor de Suporte) */
+            background: #f9acac; 
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .pet-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .pet-card h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 5px;
+            color: #1a1a1a;
+        }
+
+        .pet-card p {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 16px;
+        }
+
+        .pet-card a {
+            display: inline-block;
+            background: #1a1a1a;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+
+        .pet-card a:hover {
+            background: #333;
+        }
+
+        /* =========================================== */
+        /* Rodapé */
+        /* =========================================== */
+        footer {
+            text-align: center;
+            color: #333; 
+            padding: 20px 0;
+            font-size: 14px;
+            margin-top: 40px; 
+            background: transparent; 
+        }
+
+        /* Responsividade */
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                padding: 15px 20px;
+                gap: 15px;
+            }
+            
+            header nav ul {
+                justify-content: center;
+            }
+
+            main {
+                margin: 20px auto;
+            }
+        }
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
     </style>
 </head>
 <body>
@@ -89,16 +232,24 @@
         <h1>🐾 PetCloud</h1>
         <nav>
             <ul>
+<<<<<<< HEAD
                 <li><a href="index.html">Início</a></li>
                 <li><a href="dashboard.html">Dashboard</a></li>
                 <li><a href="listagem.html" aria-current="page" style="color: #FF9933; border-bottom: 2px solid #FF9933;">Pets</a></li>
                 <li><a href="concurso.html">Concursos Pets</a></li>
                 <li><a href="index.html">Sair</a></li>
+=======
+                <li><a href="/dashboard.html" class="nav-link">Dashboard</a></li>
+                <li><a href="/listagem.html" class="nav-link">Pets</a></li>
+                <li><a href="/concurso.html" class="nav-link">Concursos Pets</a></li>
+                <li><a href="/" onclick="logout(); return false;">Sair</a></li>
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
             </ul>
         </nav>
     </header>
 
     <main>
+<<<<<<< HEAD
         <section>
             <h2>Meus Pets Cadastrados</h2>
             <p>Visualize todos os seus pets e acesse o diário completo de saúde e bem-estar de cada um.</p>
@@ -167,11 +318,136 @@
             <div class="carousel-dots" id="carouselDots"></div>
         </div>
 
+=======
+        <!-- Modal de cadastro de pet -->
+        <div id="petModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <span class="close" id="closePetModal">&times;</span>
+                <h2>Cadastrar Novo Pet</h2>
+                <form id="petForm" aria-label="Cadastro de Pet">
+                    <div class="form-group">
+                        <label for="petName">Nome:</label>
+                        <input type="text" id="petName" name="petName" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="petBreed">Raça:</label>
+                        <input type="text" id="petBreed" name="petBreed" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="petBirthDate">Data de Nascimento:</label>
+                        <input type="date" id="petBirthDate" name="petBirthDate" required />
+                    </div>
+                    <button type="submit" class="btn-primary">Cadastrar Pet</button>
+                </form>
+                <div id="petFormMessage" aria-live="polite"></div>
+            </div>
+        </div>
+        <script>
+            document.getElementById('petForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const nome = document.getElementById('petName').value;
+                const raca = document.getElementById('petBreed').value;
+                const birth_date = document.getElementById('petBirthDate').value;
+                const messageDiv = document.getElementById('petFormMessage');
+                messageDiv.textContent = '';
+                try {
+                    const response = await fetch('/api/pets', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ nome, raca, birth_date })
+                    });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        messageDiv.textContent = 'Pet cadastrado com sucesso!';
+                        messageDiv.style.color = 'green';
+                        document.getElementById('petForm').reset();
+                    } else {
+                        messageDiv.textContent = result.message || 'Erro ao cadastrar pet.';
+                        messageDiv.style.color = 'red';
+                    }
+                } catch (err) {
+                    messageDiv.textContent = 'Erro de conexão com o servidor.';
+                    messageDiv.style.color = 'red';
+                }
+            });
+        </script>
+        <script>
+            document.querySelectorAll('.nav-link').forEach(function(link) {
+                if (window.location.pathname === link.getAttribute('href')) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        </script>
+        <section>
+            <h2>Meus Pets Cadastrados</h2>
+            <p>Visualize todos os seus pets e acesse o diário completo de saúde e bem-estar de cada um.</p>
+            <button id="openPetModal" class="add-pet-btn" type="button">+ Adicionar Novo Pet</button>
+        <script>
+            // Abrir modal
+            document.getElementById('openPetModal').onclick = function() {
+                document.getElementById('petModal').style.display = 'block';
+            };
+            // Fechar modal
+            document.getElementById('closePetModal').onclick = function() {
+                document.getElementById('petModal').style.display = 'none';
+            };
+            // Fechar modal ao clicar fora do conteúdo
+            window.onclick = function(event) {
+                var modal = document.getElementById('petModal');
+                if (event.target == modal) {
+                    modal.style.display = 'none';
+                }
+            };
+            // Submissão do formulário (apenas front-end)
+            document.getElementById('petForm').onsubmit = function(e) {
+                e.preventDefault();
+                document.getElementById('petFormMessage').textContent = 'Pet cadastrado (simulação front-end).';
+                document.getElementById('petFormMessage').style.color = 'green';
+                document.getElementById('petForm').reset();
+                setTimeout(function(){
+                    document.getElementById('petModal').style.display = 'none';
+                    document.getElementById('petFormMessage').textContent = '';
+                }, 1200);
+            };
+        </script>
+        </section>
+
+        <div class="pet-list">
+            <article class="pet-card">
+                <h3>Fido</h3>
+                <p>Raça: Pitbull | Idade: 3 anos</p>
+                <a href="detalhes.html">Ver Detalhes</a>
+            </article>
+
+            <article class="pet-card">
+                <h3>Mimi</h3>
+                <p>Raça: Siamês | Idade: 2 anos</p>
+                <a href="detalhes-mimi.html">Ver Detalhes</a>
+            </article>
+
+            <article class="pet-card">
+                <h3>Bob</h3>
+                <p>Raça: Poodle | Idade: 1 ano</p>
+                <a href="detalhes-bob.html">Ver Detalhes</a>
+            </article>
+
+             <article class="pet-card">
+                <h3>Luna</h3>
+                <p>Raça: Gata Vira-Lata | Idade: 5 meses</p>
+                <a href="detalhes-luna.html">Ver Detalhes</a>
+            </article>
+        </div>
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
     </main>
 
     <footer>
         <p>&copy; 2025 PetCloud. Todos os direitos reservados.</p>
     </footer>
+<<<<<<< HEAD
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -254,5 +530,7 @@
             }
         });
     </script>
+=======
+>>>>>>> 626437eff653a33e754ef4ddd8393fe603f44615
 </body>
 </html>
