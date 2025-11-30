@@ -6,6 +6,7 @@ from flask_cors import CORS
 import os
 import secrets
 from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
 from models.Pet import Pet
 from models.User import User
 from models.PasswordReset import PasswordReset
@@ -19,6 +20,19 @@ app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'petcloud-secret-key-change-in-production')
 CORS(app)  # Enable CORS for all routes
 
+# Configurações de upload
+UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'uploads')
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Criar pasta de uploads se não existir
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 # Cria todas as tabelas (incluindo password_resets)
 Base.metadata.create_all(bind=engine)
 
@@ -31,14 +45,45 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 def home():
     return send_from_directory(ROOT_DIR, 'index.html')
 
+# Rota para servir arquivos de upload
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 # Rota para cadastro de pet
 @app.route('/api/pets', methods=['POST'])
 def cadastrar_pet():
-    data = request.get_json()
-    name = data.get('nome')
-    breed = data.get('raca')
-    birth_date = data.get('birth_date')
-    pet_type = data.get('especie')  # Captura o campo especie (opcional)
+    # Verificar se é JSON ou FormData
+    if request.content_type and 'multipart/form-data' in request.content_type:
+        # FormData com possível arquivo
+        name = request.form.get('nome')
+        breed = request.form.get('raca')
+        birth_date = request.form.get('birth_date')
+        pet_type = request.form.get('especie')
+        descricao = request.form.get('descricao')
+        
+        # Processar imagem se enviada
+        photo_url = None
+        if 'foto' in request.files:
+            file = request.files['foto']
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                # Adicionar timestamp para evitar conflitos
+                from datetime import datetime
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                photo_url = f"/uploads/{filename}"
+    else:
+        # JSON tradicional
+        data = request.get_json()
+        name = data.get('nome')
+        breed = data.get('raca')
+        birth_date = data.get('birth_date')
+        pet_type = data.get('especie')
+        descricao = data.get('descricao')
+        photo_url = None
 
     # Validação dos campos obrigatórios
     if not all([name, breed, birth_date]):
@@ -58,11 +103,11 @@ def cadastrar_pet():
         }), 400
 
     db = SessionLocal()
-    pet = Pet(name=name, breed=breed, birth_date=birth_date_dt, type=pet_type)
+    pet = Pet(name=name, breed=breed, birth_date=birth_date_dt, type=pet_type, photo_url=photo_url)
     db.add(pet)
     db.commit()
     db.refresh(pet)
-    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}")
+    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}, foto={pet.photo_url}")
     db.close()
     return jsonify({
         'success': True,
@@ -71,7 +116,8 @@ def cadastrar_pet():
             'id': pet.id,
             'name': pet.name,
             'breed': pet.breed,
-            'birth_date': pet.birth_date.strftime('%Y-%m-%d')
+            'birth_date': pet.birth_date.strftime('%Y-%m-%d'),
+            'photo_url': pet.photo_url
         }
     }), 201
 
@@ -88,7 +134,8 @@ def listar_pets():
                 'name': pet.name,
                 'type': pet.type,
                 'breed': pet.breed,
-                'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None
+                'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None,
+                'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None
             })
         print(f"[LISTAGEM] Retornando {len(pets_list)} pets")
         return jsonify({
@@ -122,6 +169,7 @@ def obter_pet(pet_id):
             'type': pet.type,
             'breed': pet.breed,
             'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None,
+            'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None,
             'owner_id': pet.owner_id if hasattr(pet, 'owner_id') else None,
             'health_records': pet.health_records if hasattr(pet, 'health_records') else None,
             'feeding_schedule': pet.feeding_schedule if hasattr(pet, 'feeding_schedule') else None,
@@ -182,6 +230,54 @@ def atualizar_pet(pet_id):
         return jsonify({'success': False, 'message': 'Erro ao atualizar pet'}), 500
     finally:
         db.close()
+
+# Rota para atualizar foto do pet
+@app.route('/api/pets/<int:pet_id>/photo', methods=['PUT'])
+def atualizar_foto_pet(pet_id):
+    db = SessionLocal()
+    try:
+        pet = db.query(Pet).filter(Pet.id == pet_id).first()
+        if not pet:
+            return jsonify({'success': False, 'message': 'Pet não encontrado'}), 404
+
+        # Verificar se há arquivo
+        if 'foto' not in request.files:
+            return jsonify({'success': False, 'message': 'Nenhum arquivo enviado'}), 400
+        
+        file = request.files['foto']
+        if not file or not file.filename:
+            return jsonify({'success': False, 'message': 'Arquivo inválido'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'success': False, 'message': 'Tipo de arquivo não permitido'}), 400
+
+        # Salvar arquivo
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(filepath)
+        
+        # Atualizar photo_url no banco
+        pet.photo_url = f"/uploads/{filename}"
+        db.commit()
+        db.refresh(pet)
+        
+        print(f"[FOTO] Pet {pet_id} foto atualizada: {pet.photo_url}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Foto atualizada com sucesso!',
+            'photo_url': pet.photo_url
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[ERRO] Erro ao atualizar foto do pet {pet_id}: {e}")
+        return jsonify({'success': False, 'message': 'Erro ao atualizar foto'}), 500
+    finally:
+        db.close()
+
 # Rota para obter o veterinário principal de um pet (baseado nos serviços)
 @app.route('/api/pets/<int:pet_id>/main-veterinarian', methods=['GET'])
 def obter_veterinario_principal(pet_id):

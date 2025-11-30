@@ -24,6 +24,7 @@ class Pet(Base):
     birth_date = Column(DateTime, nullable=False)  # Usado como idade
     type = Column(String, nullable=True)  # Espécie opcional
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    photo_url = Column(String, nullable=True)  # URL da foto do pet
     health_records = Column(String, default=json.dumps([]), nullable=True)
     feeding_schedule = Column(String, default=json.dumps([]), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
@@ -123,6 +124,7 @@ class Pet(Base):
             'breed': self.breed,
             'birth_date': self.birth_date.isoformat() if self.birth_date else None,
             'age': self.get_age() if hasattr(self, 'get_age') else None,
+            'photo_url': self.photo_url if hasattr(self, 'photo_url') else None,
             'owner': {'id': self.owner.id, 'name': self.owner.name} if hasattr(self, 'owner') and self.owner else None,
             'health_records': self.health_records if hasattr(self, 'health_records') else [],
             'feeding_schedule': [

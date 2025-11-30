@@ -300,27 +300,47 @@
     </footer>
 
     <script>
+        // Preview da imagem selecionada
+        const fotoInput = document.getElementById('foto');
+        const uploadArea = document.querySelector('.photo-upload-area');
+        
+        fotoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    uploadArea.innerHTML = `
+                        <img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 10px; object-fit: cover;">
+                        <p style="margin-top: 10px; color: #4CAF50; font-weight: 600;">✓ Imagem selecionada: ${file.name}</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
         // Interceptar o envio do formulário e enviar para o backend
         document.querySelector('form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const nome = document.getElementById('nome').value;
-            const especie = document.getElementById('especie').value;
-            const raca = document.getElementById('raca').value;
-            const data_nascimento = document.getElementById('data_nascimento').value;
+            // Criar FormData para enviar arquivo
+            const formData = new FormData();
+            formData.append('nome', document.getElementById('nome').value);
+            formData.append('especie', document.getElementById('especie').value);
+            formData.append('raca', document.getElementById('raca').value);
+            formData.append('birth_date', document.getElementById('data_nascimento').value);
+            formData.append('descricao', document.getElementById('descricao').value);
+            
+            // Adicionar foto se selecionada
+            const fotoFile = document.getElementById('foto').files[0];
+            if (fotoFile) {
+                formData.append('foto', fotoFile);
+            }
             
             try {
-                const response = await fetch('/api/pets', {
+                const response = await fetch('http://127.0.0.1:5000/api/pets', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        nome: nome,
-                        especie: especie,
-                        raca: raca,
-                        birth_date: data_nascimento
-                    })
+                    body: formData
+                    // Não definir Content-Type, o navegador define automaticamente com boundary
                 });
                 
                 const result = await response.json();
