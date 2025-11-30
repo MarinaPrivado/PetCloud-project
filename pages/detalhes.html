@@ -96,6 +96,78 @@
             background: #E68A2E;
         }
 
+        /* Botões de Agendamento */
+        .schedule-buttons {
+            background: #fff;
+            padding: 20px 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .schedule-buttons .btn-schedule {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #a8e6f5 0%, #6dc5da 100%);
+            color: #1a1a1a;
+            padding: 12px 24px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(168, 230, 245, 0.3);
+        }
+
+        .schedule-buttons .btn-schedule:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(168, 230, 245, 0.5);
+            background: linear-gradient(135deg, #6dc5da 0%, #4facca 100%);
+        }
+
+        .schedule-buttons .btn-schedule.bath {
+            background: linear-gradient(135deg, #FF9933 0%, #E68A2E 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 153, 51, 0.3);
+        }
+
+        .schedule-buttons .btn-schedule.bath:hover {
+            box-shadow: 0 6px 20px rgba(255, 153, 51, 0.5);
+            background: linear-gradient(135deg, #E68A2E 0%, #D47B1F 100%);
+        }
+
+        .schedule-buttons .btn-schedule.vaccine {
+            background: linear-gradient(135deg, #1a1a1a 0%, #333333 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(26, 26, 26, 0.3);
+        }
+
+        .schedule-buttons .btn-schedule.vaccine:hover {
+            box-shadow: 0 6px 20px rgba(26, 26, 26, 0.5);
+            background: linear-gradient(135deg, #333333 0%, #1a1a1a 100%);
+        }
+
+        .schedule-buttons .btn-schedule.appointment {
+            background: linear-gradient(135deg, #c4e9f7 0%, #a8e6f5 100%);
+            color: #1a1a1a;
+            box-shadow: 0 4px 15px rgba(196, 233, 247, 0.4);
+            border: 2px solid #FF9933;
+        }
+
+        .schedule-buttons .btn-schedule.appointment:hover {
+            box-shadow: 0 6px 20px rgba(196, 233, 247, 0.6);
+            background: linear-gradient(135deg, #a8e6f5 0%, #8ed9f0 100%);
+        }
+
+        .schedule-buttons .btn-schedule i {
+            font-size: 18px;
+        }
+
         /* =========================================== */
         /* Layout de Conteúdo (Grid) */
         /* =========================================== */
@@ -424,6 +496,22 @@
             </div>
         </div>
 
+        <!-- Botões de Agendamento -->
+        <div class="schedule-buttons">
+            <a href="#" class="btn-schedule bath" onclick="agendarBanho(); return false;">
+                <i class="fas fa-shower"></i>
+                Agendar Banho
+            </a>
+            <a href="#" class="btn-schedule vaccine" onclick="agendarVacinacao(); return false;">
+                <i class="fas fa-syringe"></i>
+                Agendar Vacinação
+            </a>
+            <a href="#" class="btn-schedule appointment" onclick="agendarConsulta(); return false;">
+                <i class="fas fa-stethoscope"></i>
+                Agendar Consulta
+            </a>
+        </div>
+
         <div class="details-grid">
             <div class="history-column">
                 
@@ -649,6 +737,25 @@
         });
 
         document.addEventListener('DOMContentLoaded', carregarDetalhes);
+
+        // Funções de agendamento
+        function agendarBanho() {
+            const petName = document.getElementById('pet-name').textContent || 'Pet';
+            alert(`🛁 Agendamento de Banho\n\nPet: ${petName}\n\nEm breve você poderá agendar banhos para seu pet!`);
+            // TODO: Implementar modal ou redirecionamento para página de agendamento
+        }
+
+        function agendarVacinacao() {
+            const petName = document.getElementById('pet-name').textContent || 'Pet';
+            alert(`💉 Agendamento de Vacinação\n\nPet: ${petName}\n\nEm breve você poderá agendar vacinações para seu pet!`);
+            // TODO: Implementar modal ou redirecionamento para página de agendamento
+        }
+
+        function agendarConsulta() {
+            const petName = document.getElementById('pet-name').textContent || 'Pet';
+            alert(`🩺 Agendamento de Consulta\n\nPet: ${petName}\n\nEm breve você poderá agendar consultas veterinárias para seu pet!`);
+            // TODO: Implementar modal ou redirecionamento para página de agendamento
+        }
     </script>
     <button id="prev-pet" class="full-width-nav-arrow" title="Pet Anterior">
         <i class="fas fa-chevron-left"></i>
