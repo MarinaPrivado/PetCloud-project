@@ -7,9 +7,10 @@ import os
 import secrets
 from datetime import datetime, timedelta
 from models.Pet import Pet
-from models.Vaccine import Vaccine
 from models.User import User
 from models.PasswordReset import PasswordReset
+from models.Servico import Servico
+from models.Clinica import Clinica
 from config.database import SessionLocal, Base, engine
 
 
@@ -112,6 +113,9 @@ def obter_pet(pet_id):
         if not pet:
             return jsonify({'success': False, 'message': 'Pet não encontrado'}), 404
 
+        # Buscar serviços agendados para este pet
+        servicos = db.query(Servico).filter(Servico.pet_id == pet_id).order_by(Servico.data_agendada.desc()).all()
+        
         pet_data = {
             'id': pet.id,
             'name': pet.name,
@@ -120,9 +124,10 @@ def obter_pet(pet_id):
             'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None,
             'owner_id': pet.owner_id if hasattr(pet, 'owner_id') else None,
             'health_records': pet.health_records if hasattr(pet, 'health_records') else None,
-            'feeding_schedule': pet.feeding_schedule if hasattr(pet, 'feeding_schedule') else None
+            'feeding_schedule': pet.feeding_schedule if hasattr(pet, 'feeding_schedule') else None,
+            'servicos': [servico.to_dict() for servico in servicos]
         }
-        print(f"[OBTER] Pet encontrado: id={pet.id}, nome={pet.name}")
+        print(f"[OBTER] Pet encontrado: id={pet.id}, nome={pet.name}, serviços={len(servicos)}")
         return jsonify({'success': True, 'pet': pet_data}), 200
     except Exception as e:
         print(f"[ERRO] Erro ao obter pet {pet_id}: {e}")
@@ -177,124 +182,7 @@ def atualizar_pet(pet_id):
         return jsonify({'success': False, 'message': 'Erro ao atualizar pet'}), 500
     finally:
         db.close()
-
-# =========================================== 
-# Rotas de Vacinas
-# ===========================================
-
-# Rota para cadastrar uma vacina
-@app.route('/api/vaccines', methods=['POST'])
-def cadastrar_vacina():
-    db = SessionLocal()
-    try:
-        data = request.get_json()
-        tipo = data.get('type') or data.get('tipo')
-        data_programada = data.get('scheduled_date') or data.get('data_programada')
-        veterinario = data.get('veterinarian') or data.get('veterinario')
-        pet_id = data.get('pet_id')
-
-        # Validação dos campos obrigatórios
-        if not all([tipo, data_programada, pet_id]):
-            return jsonify({
-                'success': False,
-                'message': 'Tipo, data programada e pet_id são obrigatórios.'
-            }), 400
-
-        # Verifica se o pet existe
-        pet = db.query(Pet).filter(Pet.id == pet_id).first()
-        if not pet:
-            return jsonify({
-                'success': False,
-                'message': 'Pet não encontrado.'
-            }), 404
-
-        # Converte data_programada para date
-        from datetime import datetime
-        try:
-            data_programada_dt = datetime.strptime(data_programada, '%Y-%m-%d').date()
-        except Exception:
-            return jsonify({
-                'success': False,
-                'message': 'Data programada inválida. Use o formato YYYY-MM-DD.'
-            }), 400
-
-        vacina = Vaccine(
-            type=tipo,
-            scheduled_date=data_programada_dt,
-            veterinarian=veterinario,
-            pet_id=pet_id
-        )
-        db.add(vacina)
-        db.commit()
-        db.refresh(vacina)
-        
-        print(f"[CADASTRO] Vacina cadastrada: id={vacina.id}, tipo={vacina.type}, pet_id={vacina.pet_id}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'Vacina cadastrada com sucesso!',
-            'vaccine': vacina.to_dict()
-        }), 201
-    except Exception as e:
-        db.rollback()
-        print(f"[ERRO] Erro ao cadastrar vacina: {e}")
-        return jsonify({'success': False, 'message': 'Erro ao cadastrar vacina'}), 500
-    finally:
-        db.close()
-
-# Rota para listar todas as vacinas
-@app.route('/api/vaccines', methods=['GET'])
-def listar_vacinas():
-    db = SessionLocal()
-    try:
-        vacinas = db.query(Vaccine).all()
-        vacinas_list = [vacina.to_dict() for vacina in vacinas]
-        
-        print(f"[LISTAGEM] Retornando {len(vacinas_list)} vacinas")
-        return jsonify({
-            'success': True,
-            'vaccines': vacinas_list
-        }), 200
-    except Exception as e:
-        print(f"[ERRO] Erro ao listar vacinas: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Erro ao listar vacinas'
-        }), 500
-    finally:
-        db.close()
-
-# Rota para listar vacinas de um pet específico
-@app.route('/api/pets/<int:pet_id>/vaccines', methods=['GET'])
-def listar_vacinas_pet(pet_id):
-    db = SessionLocal()
-    try:
-        # Verifica se o pet existe
-        pet = db.query(Pet).filter(Pet.id == pet_id).first()
-        if not pet:
-            return jsonify({
-                'success': False,
-                'message': 'Pet não encontrado'
-            }), 404
-
-        vacinas = db.query(Vaccine).filter(Vaccine.pet_id == pet_id).all()
-        vacinas_list = [vacina.to_dict() for vacina in vacinas]
-        
-        print(f"[LISTAGEM] Retornando {len(vacinas_list)} vacinas do pet {pet_id}")
-        return jsonify({
-            'success': True,
-            'vaccines': vacinas_list
-        }), 200
-    except Exception as e:
-        print(f"[ERRO] Erro ao listar vacinas do pet {pet_id}: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Erro ao listar vacinas'
-        }), 500
-    finally:
-        db.close()
-
-# Rota para obter o veterinário principal de um pet (baseado nas vacinas)
+# Rota para obter o veterinário principal de um pet (baseado nos serviços)
 @app.route('/api/pets/<int:pet_id>/main-veterinarian', methods=['GET'])
 def obter_veterinario_principal(pet_id):
     db = SessionLocal()
@@ -307,25 +195,28 @@ def obter_veterinario_principal(pet_id):
                 'message': 'Pet não encontrado'
             }), 404
 
-        # Busca todas as vacinas do pet
-        vacinas = db.query(Vaccine).filter(Vaccine.pet_id == pet_id).all()
+        # Busca todos os serviços do pet que têm veterinário informado
+        servicos = db.query(Servico).filter(
+            Servico.pet_id == pet_id,
+            Servico.veterinario.isnot(None)
+        ).all()
         
-        if not vacinas:
+        if not servicos:
             return jsonify({
                 'success': True,
                 'main_veterinarian': None,
-                'message': 'Nenhuma vacina cadastrada para este pet'
+                'message': 'Nenhum serviço com veterinário cadastrado para este pet'
             }), 200
 
         # Conta a frequência de cada veterinário
         from collections import Counter
-        veterinarios = [v.veterinarian for v in vacinas if v.veterinarian]
+        veterinarios = [s.veterinario for s in servicos if s.veterinario]
         
         if not veterinarios:
             return jsonify({
                 'success': True,
                 'main_veterinarian': None,
-                'message': 'Nenhum veterinário informado nas vacinas'
+                'message': 'Nenhum veterinário informado nos serviços'
             }), 200
 
         # Pega o veterinário mais frequente
@@ -333,13 +224,13 @@ def obter_veterinario_principal(pet_id):
         veterinario_principal = contador.most_common(1)[0][0]
         frequencia = contador.most_common(1)[0][1]
         
-        print(f"[VETERINARIO] Pet {pet_id} - Veterinário principal: {veterinario_principal} ({frequencia} vacinas)")
+        print(f"[VETERINARIO] Pet {pet_id} - Veterinário principal: {veterinario_principal} ({frequencia} serviços)")
         
         return jsonify({
             'success': True,
             'main_veterinarian': veterinario_principal,
             'frequency': frequencia,
-            'total_vaccines': len(vacinas)
+            'total_services': len(servicos)
         }), 200
     except Exception as e:
         print(f"[ERRO] Erro ao obter veterinário principal do pet {pet_id}: {e}")
@@ -686,6 +577,91 @@ def reset_password():
         db.rollback()
         print(f'[ERRO] Erro ao redefinir senha: {e}')
         return jsonify({'success': False, 'message': 'Erro ao redefinir senha.'}), 500
+    finally:
+        db.close()
+
+
+# ===== ROTAS DE CLÍNICAS =====
+
+@app.route('/api/clinicas', methods=['GET'])
+def get_clinicas():
+    """Lista todas as clínicas cadastradas"""
+    db = SessionLocal()
+    try:
+        tipo = request.args.get('tipo')  # Filtrar por tipo de serviço (opcional)
+        
+        query = db.query(Clinica)
+        if tipo:
+            query = query.filter(Clinica.tipo_servico == tipo)
+        
+        clinicas = query.all()
+        
+        return jsonify({
+            'success': True,
+            'clinicas': [clinica.to_dict() for clinica in clinicas]
+        }), 200
+        
+    except Exception as e:
+        print(f'[ERRO] Erro ao listar clínicas: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao listar clínicas.'}), 500
+    finally:
+        db.close()
+
+
+# ===== ROTAS DE SERVIÇOS =====
+
+@app.route('/api/servicos', methods=['POST'])
+def create_servico():
+    """Cria um novo agendamento de serviço"""
+    db = SessionLocal()
+    try:
+        data = request.json
+        
+        # Validar campos obrigatórios
+        required_fields = ['pet_id', 'tipo', 'data_agendada', 'clinica_id']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'message': f'Campo {field} é obrigatório.'}), 400
+        
+        # Buscar clínica para pegar veterinário e preço
+        clinica = db.query(Clinica).filter(Clinica.id == data['clinica_id']).first()
+        if not clinica:
+            return jsonify({'success': False, 'message': 'Clínica não encontrada.'}), 404
+        
+        # Verificar se o pet existe
+        pet = db.query(Pet).filter(Pet.id == data['pet_id']).first()
+        if not pet:
+            return jsonify({'success': False, 'message': 'Pet não encontrado.'}), 404
+        
+        # Criar serviço
+        servico = Servico(
+            pet_id=data['pet_id'],
+            clinica_id=data['clinica_id'],
+            tipo=data['tipo'],
+            data_agendada=datetime.strptime(data['data_agendada'], '%Y-%m-%d').date(),
+            preco=clinica.preco_servico,
+            clinica=clinica.nome,
+            veterinario=clinica.veterinario
+        )
+        
+        db.add(servico)
+        db.commit()
+        db.refresh(servico)
+        
+        print(f'[SERVICO] Agendamento criado: {servico.tipo} para pet {pet.name} na {clinica.nome}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Serviço agendado com sucesso!',
+            'servico': servico.to_dict()
+        }), 201
+        
+    except ValueError as e:
+        return jsonify({'success': False, 'message': 'Formato de data inválido. Use YYYY-MM-DD.'}), 400
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao criar serviço: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao agendar serviço.'}), 500
     finally:
         db.close()
 

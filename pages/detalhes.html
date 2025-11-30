@@ -408,6 +408,29 @@
             font-size: 16px;
         }
 
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+        }
+
+        .form-group input[type="date"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .readonly-field {
+            background-color: #f5f5f5;
+            cursor: not-allowed;
+        }
+
         .btn-submit {
             background: #FF9933;
             color: white;
@@ -518,29 +541,11 @@
                 <section class="data-block">
                     <h3><i class="fas fa-history"></i> Linha do Tempo: Saúde e Momentos Especiais</h3>
                     
-                    <div class="timeline-item">
-                        <h4>Vacina V8 (Reforço Anual)</h4>
-                        <p>Dose aplicada pelo Dr. Carlos. Próxima dose em Outubro/2026. Lote: XYZ123.</p>
-                        <span><i class="fas fa-calendar-alt"></i> Outubro, 2025</span>
-                    </div>
-                    
-                    <div class="timeline-item">
-                        <h4>Momento Especial: Primeira Viagem à Praia! 🏖️</h4>
-                        <p>Fido adorou correr na areia e brincar com as ondas. Dia inesquecível!</p>
-                        
-                        <div class="timeline-gallery">
-                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
-                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
-                            <div class="timeline-photo"><i class="fas fa-camera"></i></div>
+                    <div id="timeline-container">
+                        <!-- Timeline items serão carregados dinamicamente via JavaScript -->
+                        <div class="timeline-item">
+                            <h4>Carregando...</h4>
                         </div>
-                        
-                        <span><i class="fas fa-calendar-alt"></i> Julho, 2025</span>
-                    </div>
-
-                    <div class="timeline-item">
-                        <h4>Consulta de Rotina</h4>
-                        <p>Exames de sangue OK. Recomendado reforço de vermífugo em 3 meses.</p>
-                        <span><i class="fas fa-calendar-alt"></i> Junho, 2025</span>
                     </div>
 
                 </section>
@@ -581,6 +586,41 @@
             </div>
         </div>
     </main>
+    
+    <!-- Modal de Agendamento -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeScheduleModal()">&times;</span>
+            <h2 id="scheduleModalTitle">Agendar Serviço</h2>
+            <form id="scheduleForm">
+                <div class="form-group">
+                    <label for="scheduleClinica">Clínica *</label>
+                    <select id="scheduleClinica" required>
+                        <option value="">Selecione uma clínica...</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduleVeterinario">Veterinário</label>
+                    <input type="text" id="scheduleVeterinario" class="readonly-field" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="schedulePreco">Preço</label>
+                    <input type="text" id="schedulePreco" class="readonly-field" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="scheduleData">Data do Agendamento *</label>
+                    <input type="date" id="scheduleData" required>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">
+                    <i class="fas fa-check"></i> Confirmar Agendamento
+                </button>
+            </form>
+        </div>
+    </div>
     
     <script>
         // Parse o query param `id` da URL
@@ -627,6 +667,9 @@
                 
                 // Buscar veterinário principal baseado nas vacinas
                 carregarVeterinarioPrincipal(id);
+                
+                // Carregar linha do tempo com serviços agendados
+                carregarLinhaDoTempo(pet);
 
                 // Armazenar pet id nas setas para navegação (opcional)
                 document.getElementById('prev-pet').dataset.petId = id;
@@ -658,6 +701,59 @@
                 console.error('Erro ao carregar veterinário principal:', err);
                 document.getElementById('pet-vet').textContent = '-';
             }
+        }
+
+        // Função para carregar a linha do tempo com serviços agendados
+        function carregarLinhaDoTempo(pet) {
+            const timelineContainer = document.getElementById('timeline-container');
+            timelineContainer.innerHTML = '';
+            
+            if (!pet.servicos || pet.servicos.length === 0) {
+                timelineContainer.innerHTML = '<div class="timeline-item"><h4>Nenhum serviço agendado ainda</h4><p>Agende banhos, vacinações ou consultas para seu pet!</p></div>';
+                return;
+            }
+            
+            // Mapear ícones por tipo de serviço
+            const icons = {
+                'banho': '🛁',
+                'vacinacao': '💉',
+                'consulta': '🩺'
+            };
+            
+            const tipoNome = {
+                'banho': 'Banho',
+                'vacinacao': 'Vacinação',
+                'consulta': 'Consulta Veterinária'
+            };
+            
+            // Ordenar serviços por data (mais recente primeiro)
+            const servicosOrdenados = [...pet.servicos].sort((a, b) => {
+                return new Date(b.data_agendada) - new Date(a.data_agendada);
+            });
+            
+            servicosOrdenados.forEach(servico => {
+                const data = new Date(servico.data_agendada);
+                const dataFormatada = data.toLocaleDateString('pt-BR', { 
+                    day: '2-digit', 
+                    month: 'long', 
+                    year: 'numeric' 
+                });
+                
+                const icon = icons[servico.tipo] || '📋';
+                const nome = tipoNome[servico.tipo] || servico.tipo;
+                
+                const timelineItem = document.createElement('div');
+                timelineItem.className = 'timeline-item';
+                timelineItem.innerHTML = `
+                    <h4>${icon} ${nome}</h4>
+                    <p><strong>Clínica:</strong> ${servico.clinica || 'Não informada'}<br>
+                    <strong>Veterinário:</strong> ${servico.veterinario || 'Não informado'}<br>
+                    <strong>Preço:</strong> ${servico.preco ? 'R$ ' + servico.preco.toFixed(2) : 'Não informado'}</p>
+                    <span><i class="fas fa-calendar-alt"></i> ${dataFormatada}</span>
+                `;
+                
+                timelineContainer.appendChild(timelineItem);
+            });
         }
 
         // Controle do modal de edição
@@ -738,24 +834,136 @@
 
         document.addEventListener('DOMContentLoaded', carregarDetalhes);
 
-        // Funções de agendamento
+        // ===== FUNÇÕES DE AGENDAMENTO =====
+        
+        let currentServiceType = ''; // 'banho', 'vacinacao', 'consulta'
+        
         function agendarBanho() {
-            const petName = document.getElementById('pet-name').textContent || 'Pet';
-            alert(`🛁 Agendamento de Banho\n\nPet: ${petName}\n\nEm breve você poderá agendar banhos para seu pet!`);
-            // TODO: Implementar modal ou redirecionamento para página de agendamento
+            currentServiceType = 'banho';
+            openScheduleModal('Agendar Banho', 'banho');
         }
 
         function agendarVacinacao() {
-            const petName = document.getElementById('pet-name').textContent || 'Pet';
-            alert(`💉 Agendamento de Vacinação\n\nPet: ${petName}\n\nEm breve você poderá agendar vacinações para seu pet!`);
-            // TODO: Implementar modal ou redirecionamento para página de agendamento
+            currentServiceType = 'vacinacao';
+            openScheduleModal('Agendar Vacinação', 'vacinacao');
         }
 
         function agendarConsulta() {
-            const petName = document.getElementById('pet-name').textContent || 'Pet';
-            alert(`🩺 Agendamento de Consulta\n\nPet: ${petName}\n\nEm breve você poderá agendar consultas veterinárias para seu pet!`);
-            // TODO: Implementar modal ou redirecionamento para página de agendamento
+            currentServiceType = 'consulta';
+            openScheduleModal('Agendar Consulta', 'consulta');
         }
+
+        async function openScheduleModal(title, tipo) {
+            document.getElementById('scheduleModalTitle').textContent = title;
+            document.getElementById('scheduleModal').style.display = 'block';
+            
+            // Limpar formulário
+            document.getElementById('scheduleForm').reset();
+            document.getElementById('scheduleVeterinario').value = '';
+            document.getElementById('schedulePreco').value = '';
+            
+            // Carregar clínicas
+            await carregarClinicas(tipo);
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+        }
+
+        async function carregarClinicas(tipo) {
+            try {
+                const response = await fetch(`http://localhost:5000/api/clinicas?tipo=${tipo}`);
+                const data = await response.json();
+                
+                const select = document.getElementById('scheduleClinica');
+                select.innerHTML = '<option value="">Selecione uma clínica...</option>';
+                
+                if (data.success && data.clinicas.length > 0) {
+                    data.clinicas.forEach(clinica => {
+                        const option = document.createElement('option');
+                        option.value = clinica.id;
+                        option.textContent = clinica.nome;
+                        option.dataset.veterinario = clinica.veterinario || 'Não informado';
+                        option.dataset.preco = clinica.preco_servico || '0';
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">Nenhuma clínica disponível para este serviço</option>';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar clínicas:', error);
+                alert('Erro ao carregar clínicas. Tente novamente.');
+            }
+        }
+
+        // Atualizar veterinário e preço quando selecionar clínica
+        document.getElementById('scheduleClinica').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                document.getElementById('scheduleVeterinario').value = selectedOption.dataset.veterinario;
+                const preco = parseFloat(selectedOption.dataset.preco);
+                document.getElementById('schedulePreco').value = preco > 0 ? `R$ ${preco.toFixed(2)}` : 'A combinar';
+            } else {
+                document.getElementById('scheduleVeterinario').value = '';
+                document.getElementById('schedulePreco').value = '';
+            }
+        });
+
+        // Submeter formulário de agendamento
+        document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const petId = getQueryParam('id');
+            const clinicaId = document.getElementById('scheduleClinica').value;
+            const data = document.getElementById('scheduleData').value;
+            
+            if (!clinicaId) {
+                alert('Por favor, selecione uma clínica.');
+                return;
+            }
+            
+            if (!data) {
+                alert('Por favor, selecione uma data.');
+                return;
+            }
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/servicos', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pet_id: parseInt(petId),
+                        clinica_id: parseInt(clinicaId),
+                        tipo: currentServiceType,
+                        data_agendada: data
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    alert('✅ Serviço agendado com sucesso!');
+                    closeScheduleModal();
+                    // Recarregar detalhes do pet
+                    carregarDetalhes();
+                } else {
+                    alert('❌ Erro ao agendar serviço: ' + (result.message || 'Erro desconhecido'));
+                }
+            } catch (error) {
+                console.error('Erro ao agendar serviço:', error);
+                alert('❌ Erro de conexão com o servidor. Tente novamente.');
+            }
+        });
+
+        // Fechar modal ao clicar fora
+        window.onclick = function(event) {
+            const modal = document.getElementById('scheduleModal');
+            if (event.target == modal) {
+                closeScheduleModal();
+            }
+        };
     </script>
     <button id="prev-pet" class="full-width-nav-arrow" title="Pet Anterior">
         <i class="fas fa-chevron-left"></i>

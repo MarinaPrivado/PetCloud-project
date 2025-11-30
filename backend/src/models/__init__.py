@@ -7,6 +7,8 @@ from config.database import Base
 from .User import User
 from .Pet import Pet
 from .PasswordReset import PasswordReset
+from .Servico import Servico
+from .Clinica import Clinica
 
 
 try:
@@ -18,5 +20,9 @@ if not TYPE_CHECKING:
     Pet.owner = relationship("User", back_populates="pets", lazy="joined")
     User.password_resets = relationship("PasswordReset", back_populates="user", lazy="select")
     PasswordReset.user = relationship("User", back_populates="password_resets", lazy="joined")
+    Pet.servicos = relationship("Servico", back_populates="pet", lazy="select")
+    Servico.pet = relationship("Pet", back_populates="servicos", lazy="joined")
+    Clinica.servicos = relationship("Servico", back_populates="clinica_rel", lazy="select")
+    Servico.clinica_rel = relationship("Clinica", back_populates="servicos", lazy="joined")
 
-__all__ = ['User', 'Pet', 'PasswordReset', 'Base']
+__all__ = ['User', 'Pet', 'PasswordReset', 'Servico', 'Clinica', 'Base']
