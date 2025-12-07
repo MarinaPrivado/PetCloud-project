@@ -231,18 +231,25 @@
         /* Estilo para TAGS de Personalidade */
         .personality-tags {
             margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         
         .tag {
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
             background: #FF9933; /* Laranja de Ação */
             color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
+            padding: 8px 14px;
+            border-radius: 20px;
             font-size: 13px;
             font-weight: 600;
-            margin-right: 8px;
-            margin-bottom: 8px;
+        }
+        
+        .tag i {
+            font-size: 14px;
         }
 
         /* Seção de Foto do Pet */
@@ -541,7 +548,7 @@
                 <li><a href="/dashboard.html" class="nav-link">Dashboard</a></li>
                 <li><a href="/listagem.html" class="nav-link">Pets</a></li>
                 <li><a href="/concurso.html" class="nav-link">Concursos Pets</a></li>
-                <li><a href="/" onclick="logout(); return false;">Sair</a></li>
+                <li><a href="index.html">Sair</a></li>
             </ul>
         </nav>
     </header>
@@ -622,13 +629,9 @@
 
                 <section class="data-block fixed-data">
                     <h3><i class="fas fa-brain"></i> Personalidade e Comportamento</h3>
-                    <div class="personality-tags">
-                        <span class="tag">Brincalhão</span>
-                        <span class="tag">Calmo</span>
-                        <span class="tag">Amigável com Crianças</span>
-                        <span class="tag">Gosta de Água</span>
+                    <div class="personality-tags" id="behaviorTags">
+                        <!-- Tags serão carregadas dinamicamente -->
                     </div>
-                    <p style="font-size: 14px; margin-top: 15px; color: #333;">Fido é extrovertido, mas se assusta com trovões fortes. Reage bem a comandos simples.</p>
                 </section>
                 
                 <section class="data-block fixed-data">
@@ -792,6 +795,37 @@
             }
         }
 
+        // Função para exibir tags de comportamento
+        function exibirTagsComportamento(tags) {
+            const container = document.getElementById('behaviorTags');
+            
+            // Mapeamento de tags para ícones e textos em português
+            const tagInfo = {
+                'carinhoso': { icon: 'fas fa-heart', text: 'Carinhoso' },
+                'brincalhao': { icon: 'fas fa-futbol', text: 'Brincalhão' },
+                'calmo': { icon: 'fas fa-spa', text: 'Calmo' },
+                'energico': { icon: 'fas fa-bolt', text: 'Energético' },
+                'timido': { icon: 'fas fa-user-secret', text: 'Tímido' },
+                'sociavel': { icon: 'fas fa-users', text: 'Sociável' },
+                'protetor': { icon: 'fas fa-shield-alt', text: 'Protetor' },
+                'obediente': { icon: 'fas fa-check-circle', text: 'Obediente' },
+                'independente': { icon: 'fas fa-walking', text: 'Independente' },
+                'curioso': { icon: 'fas fa-search', text: 'Curioso' },
+                'medroso': { icon: 'fas fa-exclamation-triangle', text: 'Medroso' },
+                'agressivo': { icon: 'fas fa-angry', text: 'Agressivo' }
+            };
+            
+            if (!tags || tags.length === 0) {
+                container.innerHTML = '<p style="color: #999; font-size: 14px; margin-top: 10px;">Nenhuma tag de comportamento cadastrada</p>';
+                return;
+            }
+            
+            container.innerHTML = tags.map(tag => {
+                const info = tagInfo[tag.toLowerCase()] || { icon: 'fas fa-tag', text: tag };
+                return `<span class="tag"><i class="${info.icon}"></i> ${info.text}</span>`;
+            }).join('');
+        }
+
         async function carregarDetalhes() {
             const id = getQueryParam('id');
             if (!id) {
@@ -830,6 +864,9 @@
                 
                 // Exibir foto do pet
                 exibirFotoPet(pet.photo_url);
+                
+                // Exibir tags de comportamento
+                exibirTagsComportamento(pet.behavior_tags || []);
                 
                 // Buscar veterinário principal baseado nas vacinas
                 carregarVeterinarioPrincipal(id);

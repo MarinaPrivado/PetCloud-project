@@ -17,6 +17,8 @@
             align-items: center;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             gap: 25px;
+            border-radius: 20px;
+            margin: 15px 20px;
         }
 
         header h1 {
@@ -89,8 +91,7 @@
         <h1>🐾 PetCloud</h1>
         <nav>
             <ul>
-                <li><a href="index.html">Início</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="dashboard.html">Home</a></li>
                 <li><a href="listagem.html" aria-current="page" style="color: #FF9933; border-bottom: 2px solid #FF9933;">Pets</a></li>
                 <li><a href="concurso.html">Concursos Pets</a></li>
                 <li><a href="index.html">Sair</a></li>
@@ -108,55 +109,7 @@
         <!-- CARROSSEL MODERNO --> 
         <div class="carousel-container">
             <div class="carousel-track" id="carouselTrack">
-                
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=1200');">
-                    <div class="slide-content">
-                        <h3>Fido</h3>
-                        <p>Pitbull • 3 anos • Cheio de energia e amor</p>
-                        <a href="detalhes-fido.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1574158622682-e40e69881006?w=1200');">
-                    <div class="slide-content">
-                        <h3>Mimi</h3>
-                        <p>Siamês • 2 anos • Elegante e independente</p>
-                        <a href="detalhes-mimi.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?w=1200');">
-                    <div class="slide-content">
-                        <h3>Bob</h3>
-                        <p>Poodle • 1 ano • Brincalhão e inteligente</p>
-                        <a href="detalhes-bob.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=1200');">
-                    <div class="slide-content">
-                        <h3>Luna</h3>
-                        <p>Gata Vira-Lata • 5 meses • Curiosa e carinhosa</p>
-                        <a href="detalhes-luna.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1552053831-71594a27632d?w=1200');">
-                    <div class="slide-content">
-                        <h3>Rex</h3>
-                        <p>Labrador • 7 anos • Leal e companheiro</p>
-                        <a href="detalhes-rex.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
-                <div class="carousel-slide" style="background-image: url('https://images.unsplash.com/photo-1633722715463-d30f4f325e24?w=1200');">
-                    <div class="slide-content">
-                        <h3>Max</h3>
-                        <p>Golden Retriever • 4 anos • Alegre e amigável</p>
-                        <a href="detalhes-max.html" class="slide-btn">Ver Detalhes</a>
-                    </div>
-                </div>
-
+                <!-- Os pets serão carregados dinamicamente aqui -->
             </div>
 
             <!-- Botões de Navegação -->
@@ -174,83 +127,175 @@
     </footer>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             const track = document.getElementById('carouselTrack');
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
             const dotsContainer = document.getElementById('carouselDots');
             
-            const slides = track.querySelectorAll('.carousel-slide');
-            const totalSlides = slides.length;
             let currentIndex = 0;
+            let slides = [];
+            let dots = [];
 
-            // Criar dots
-            slides.forEach((_, index) => {
-                const dot = document.createElement('div');
-                dot.classList.add('dot');
-                if (index === 0) dot.classList.add('active');
-                dot.addEventListener('click', () => goToSlide(index));
-                dotsContainer.appendChild(dot);
-            });
+            // Imagem genérica para pets sem foto
+            const imagemGenerica = 'https://images.unsplash.com/photo-1444212477490-ca407925329e?w=1200';
 
-            const dots = dotsContainer.querySelectorAll('.dot');
+            // Buscar pets do banco de dados
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/pets');
+                const data = await response.json();
+                const pets = data.pets || [];
 
-            function updateCarousel() {
-                const offset = -currentIndex * 630; // 600px (width) + 30px (gap)
-                track.style.transform = `translateX(calc(-50% + ${offset}px))`;
-                
-                // Atualizar dots
-                dots.forEach((dot, index) => {
-                    dot.classList.toggle('active', index === currentIndex);
+                if (pets.length === 0) {
+                    track.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">Nenhum pet cadastrado ainda. <a href="novo_pet.html" style="color: #FF9933;">Adicione o primeiro pet!</a></div>';
+                    return;
+                }
+
+                // Criar slides dinamicamente
+                pets.forEach(pet => {
+                    const slide = document.createElement('div');
+                    slide.classList.add('carousel-slide');
+                    
+                    // Usar photo_url do pet ou imagem genérica
+                    const imagemPet = pet.photo_url 
+                        ? `http://127.0.0.1:5000${pet.photo_url}` 
+                        : imagemGenerica;
+                    
+                    slide.style.backgroundImage = `url('${imagemPet}')`;
+                    
+                    // Calcular idade
+                    let idadeTexto = '';
+                    if (pet.birth_date) {
+                        const nascimento = new Date(pet.birth_date);
+                        const hoje = new Date();
+                        const diffAnos = hoje.getFullYear() - nascimento.getFullYear();
+                        const diffMeses = hoje.getMonth() - nascimento.getMonth();
+                        
+                        if (diffAnos === 0) {
+                            idadeTexto = `${diffMeses} ${diffMeses === 1 ? 'mês' : 'meses'}`;
+                        } else {
+                            idadeTexto = `${diffAnos} ${diffAnos === 1 ? 'ano' : 'anos'}`;
+                        }
+                    } else {
+                        idadeTexto = 'Idade não informada';
+                    }
+
+                    slide.innerHTML = `
+                        <button class="delete-btn" data-pet-id="${pet.id}" title="Deletar pet">×</button>
+                        <div class="slide-content">
+                            <h3>${pet.name}</h3>
+                            <p>${pet.breed || 'Raça não informada'} • ${idadeTexto}</p>
+                            <a href="detalhes.html?id=${pet.id}" class="slide-btn">Ver Detalhes</a>
+                        </div>
+                    `;
+                    
+                    track.appendChild(slide);
                 });
 
-                // Atualizar classe active nos slides
-                slides.forEach((slide, index) => {
-                    slide.classList.toggle('active', index === currentIndex);
+                slides = track.querySelectorAll('.carousel-slide');
+                const totalSlides = slides.length;
+
+                // Adicionar event listeners para botões de deletar
+                document.querySelectorAll('.delete-btn').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const petId = btn.getAttribute('data-pet-id');
+                        const petName = btn.parentElement.querySelector('h3').textContent;
+                        
+                        if (confirm(`Tem certeza que deseja deletar ${petName}?`)) {
+                            try {
+                                const response = await fetch(`http://127.0.0.1:5000/api/pets/${petId}`, {
+                                    method: 'DELETE'
+                                });
+                                
+                                if (response.ok) {
+                                    alert('Pet deletado com sucesso!');
+                                    location.reload(); // Recarregar a página para atualizar o carrossel
+                                } else {
+                                    alert('Erro ao deletar pet.');
+                                }
+                            } catch (error) {
+                                console.error('Erro:', error);
+                                alert('Erro ao deletar pet.');
+                            }
+                        }
+                    });
                 });
-            }
 
-            function goToSlide(index) {
-                currentIndex = index;
-                updateCarousel();
-            }
+                // Criar dots
+                slides.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.classList.add('dot');
+                    if (index === 0) dot.classList.add('active');
+                    dot.addEventListener('click', () => goToSlide(index));
+                    dotsContainer.appendChild(dot);
+                });
 
-            function nextSlide() {
-                currentIndex = (currentIndex + 1) % totalSlides;
-                updateCarousel();
-            }
+                dots = dotsContainer.querySelectorAll('.dot');
 
-            function prevSlide() {
-                currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
-                updateCarousel();
-            }
+                function updateCarousel() {
+                    const offset = -currentIndex * 630; // 600px (width) + 30px (gap)
+                    track.style.transform = `translateX(calc(-50% + ${offset}px))`;
+                    
+                    // Atualizar dots
+                    dots.forEach((dot, index) => {
+                        dot.classList.toggle('active', index === currentIndex);
+                    });
 
-            nextBtn.addEventListener('click', nextSlide);
-            prevBtn.addEventListener('click', prevSlide);
-
-            // Inicializar slides
-            updateCarousel();
-
-            // Suporte para swipe em mobile
-            let touchStartX = 0;
-            let touchEndX = 0;
-
-            track.addEventListener('touchstart', (e) => {
-                touchStartX = e.changedTouches[0].screenX;
-            });
-
-            track.addEventListener('touchend', (e) => {
-                touchEndX = e.changedTouches[0].screenX;
-                handleSwipe();
-            });
-
-            function handleSwipe() {
-                if (touchStartX - touchEndX > 50) {
-                    nextSlide();
+                    // Atualizar classe active nos slides
+                    slides.forEach((slide, index) => {
+                        slide.classList.toggle('active', index === currentIndex);
+                    });
                 }
-                if (touchEndX - touchStartX > 50) {
-                    prevSlide();
+
+                function goToSlide(index) {
+                    currentIndex = index;
+                    updateCarousel();
                 }
+
+                function nextSlide() {
+                    currentIndex = (currentIndex + 1) % totalSlides;
+                    updateCarousel();
+                }
+
+                function prevSlide() {
+                    currentIndex = (currentIndex - 1 + totalSlides) % totalSlides;
+                    updateCarousel();
+                }
+
+                nextBtn.addEventListener('click', nextSlide);
+                prevBtn.addEventListener('click', prevSlide);
+
+                // Inicializar slides
+                updateCarousel();
+
+                // Suporte para swipe em mobile
+                let touchStartX = 0;
+                let touchEndX = 0;
+
+                track.addEventListener('touchstart', (e) => {
+                    touchStartX = e.changedTouches[0].screenX;
+                });
+
+                track.addEventListener('touchend', (e) => {
+                    touchEndX = e.changedTouches[0].screenX;
+                    handleSwipe();
+                });
+
+                function handleSwipe() {
+                    if (touchStartX - touchEndX > 50) {
+                        nextSlide();
+                    }
+                    if (touchEndX - touchStartX > 50) {
+                        prevSlide();
+                    }
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar pets:', error);
+                track.innerHTML = '<div style="text-align: center; padding: 40px; color: #d32f2f;">Erro ao carregar pets. Verifique se o servidor está rodando.</div>';
             }
         });
     </script>

@@ -168,6 +168,77 @@ def listar_pets():
     finally:
         db.close()
 
+# Rota para estatísticas do dashboard
+@app.route('/api/dashboard/stats', methods=['GET'])
+def dashboard_stats():
+    db = SessionLocal()
+    try:
+        # Total de pets registrados
+        total_pets = db.query(Pet).count()
+        
+        # Calcular gastos do último mês
+        hoje = datetime.now()
+        primeiro_dia_mes_atual = hoje.replace(day=1)
+        
+        # Buscar serviços do mês atual com preço
+        servicos_mes = db.query(Servico).filter(
+            Servico.data_agendada >= primeiro_dia_mes_atual,
+            Servico.data_agendada <= hoje,
+            Servico.preco.isnot(None)
+        ).all()
+        
+        total_gastos = sum(servico.preco for servico in servicos_mes if servico.preco)
+        
+        # Calcular vacinas vencidas
+        vacinas_vencidas = 0
+        data_limite = hoje - timedelta(days=365)  # 1 ano atrás
+        
+        # Buscar todos os pets
+        todos_pets = db.query(Pet).all()
+        
+        for pet in todos_pets:
+            # Buscar todas as vacinações do pet (serviços do tipo 'vacinacao')
+            vacinacoes_pet = db.query(Servico).filter(
+                Servico.pet_id == pet.id,
+                Servico.tipo == 'vacinacao'
+            ).order_by(Servico.data_agendada.desc()).all()
+            
+            if not vacinacoes_pet:
+                # Pet sem nenhuma vacinação agendada = vacina vencida
+                vacinas_vencidas += 1
+                print(f"[DASHBOARD] Pet {pet.name} (ID: {pet.id}) sem vacinações - VENCIDA")
+            else:
+                # Verificar a última vacinação
+                ultima_vacinacao = vacinacoes_pet[0]
+                if ultima_vacinacao.data_agendada < data_limite.date():
+                    # Última vacinação há mais de 1 ano = vencida
+                    vacinas_vencidas += 1
+                    dias_vencida = (hoje.date() - ultima_vacinacao.data_agendada).days
+                    print(f"[DASHBOARD] Pet {pet.name} (ID: {pet.id}) - última vacinação há {dias_vencida} dias - VENCIDA")
+                else:
+                    dias_desde = (hoje.date() - ultima_vacinacao.data_agendada).days
+                    print(f"[DASHBOARD] Pet {pet.name} (ID: {pet.id}) - última vacinação há {dias_desde} dias - OK")
+        
+        print(f"[DASHBOARD] Total de pets: {total_pets}")
+        print(f"[DASHBOARD] Gastos do mês: R$ {total_gastos:.2f} ({len(servicos_mes)} serviços)")
+        print(f"[DASHBOARD] Vacinas vencidas: {vacinas_vencidas}")
+        
+        return jsonify({
+            'success': True,
+            'total_pets': total_pets,
+            'gastos_mes': total_gastos,
+            'vacinas_vencidas': vacinas_vencidas
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERRO] Erro ao buscar estatísticas: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao buscar estatísticas'
+        }), 500
+    finally:
+        db.close()
+
 # Rota para deletar pet
 @app.route('/api/pets/<int:pet_id>', methods=['DELETE'])
 def deletar_pet(pet_id):

@@ -53,6 +53,8 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            border-radius: 20px;
+            margin: 15px 20px;
         }
         header h1 { font-size: 28px; }
         header nav ul { list-style: none; display: flex; gap: 25px; }
@@ -167,6 +169,45 @@
             color: #999;
         }
 
+        /* Tags de Comportamento */
+        .behavior-tags-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tag-option {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .tag-option:hover {
+            border-color: var(--cor-destaque);
+            background: #fff5ec;
+        }
+
+        .tag-option.selected {
+            background: var(--cor-destaque);
+            color: white;
+            border-color: var(--cor-destaque);
+        }
+
+        .tag-option i {
+            font-size: 14px;
+        }
+
         /* Botões de Ação */
         .form-actions {
             grid-column: span 2;
@@ -221,8 +262,7 @@
         <h1>🐾 PetCloud</h1>
         <nav>
             <ul>
-                <li><a href="index.html">Início</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="dashboard.html">Home</a></li>
                 <li><a href="listagem.html" style="color: var(--cor-destaque); border-bottom: 2px solid var(--cor-destaque);">Pets</a></li>
                 <li><a href="concursos.html">Concursos Pets</a></li>
                 <li><a href="index.html">Sair</a></li>
@@ -284,7 +324,52 @@
                         <textarea id="descricao" name="descricao" placeholder="Conte-nos sobre a personalidade, gostos e manias do seu pet!"></textarea>
                     </div>
 
-                    <!-- 4. Ações do Formulário -->
+                    <!-- 4. Tags de Comportamento -->
+                    <div class="form-group full-width">
+                        <label><i class="fas fa-tags"></i> Tags de Comportamento</label>
+                        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Selecione as características que descrevem o comportamento do seu pet:</p>
+                        <div class="behavior-tags-container">
+                            <div class="tag-option" data-tag="carinhoso">
+                                <i class="fas fa-heart"></i> Carinhoso
+                            </div>
+                            <div class="tag-option" data-tag="brincalhao">
+                                <i class="fas fa-futbol"></i> Brincalhão
+                            </div>
+                            <div class="tag-option" data-tag="calmo">
+                                <i class="fas fa-spa"></i> Calmo
+                            </div>
+                            <div class="tag-option" data-tag="energico">
+                                <i class="fas fa-bolt"></i> Energético
+                            </div>
+                            <div class="tag-option" data-tag="timido">
+                                <i class="fas fa-user-secret"></i> Tímido
+                            </div>
+                            <div class="tag-option" data-tag="sociavel">
+                                <i class="fas fa-users"></i> Sociável
+                            </div>
+                            <div class="tag-option" data-tag="protetor">
+                                <i class="fas fa-shield-alt"></i> Protetor
+                            </div>
+                            <div class="tag-option" data-tag="obediente">
+                                <i class="fas fa-check-circle"></i> Obediente
+                            </div>
+                            <div class="tag-option" data-tag="independente">
+                                <i class="fas fa-walking"></i> Independente
+                            </div>
+                            <div class="tag-option" data-tag="curioso">
+                                <i class="fas fa-search"></i> Curioso
+                            </div>
+                            <div class="tag-option" data-tag="medroso">
+                                <i class="fas fa-exclamation-triangle"></i> Medroso
+                            </div>
+                            <div class="tag-option" data-tag="agressivo">
+                                <i class="fas fa-angry"></i> Agressivo
+                            </div>
+                        </div>
+                        <input type="hidden" id="behavior_tags" name="behavior_tags">
+                    </div>
+
+                    <!-- 5. Ações do Formulário -->
                     <div class="form-actions">
                         <a href="listagem.html" class="btn btn-cancel">Cancelar</a>
                         <button type="submit" class="btn btn-submit-pet"><i class="fas fa-save"></i> Salvar Pet</button>
@@ -318,6 +403,32 @@
             }
         });
 
+        // Gerenciar seleção de tags de comportamento
+        const selectedTags = new Set();
+        const tagOptions = document.querySelectorAll('.tag-option');
+        
+        console.log('[FRONTEND] Tags disponíveis:', tagOptions.length);
+        
+        tagOptions.forEach(tag => {
+            tag.addEventListener('click', function() {
+                const tagValue = this.getAttribute('data-tag');
+                console.log('[FRONTEND] Tag clicada:', tagValue);
+                
+                if (this.classList.contains('selected')) {
+                    this.classList.remove('selected');
+                    selectedTags.delete(tagValue);
+                } else {
+                    this.classList.add('selected');
+                    selectedTags.add(tagValue);
+                }
+                
+                // Atualizar campo oculto com array de tags
+                const tagsArray = Array.from(selectedTags);
+                console.log('[FRONTEND] Tags selecionadas atuais:', tagsArray);
+                document.getElementById('behavior_tags').value = JSON.stringify(tagsArray);
+            });
+        });
+
         // Interceptar o envio do formulário e enviar para o backend
         document.querySelector('form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -330,11 +441,18 @@
             formData.append('birth_date', document.getElementById('data_nascimento').value);
             formData.append('descricao', document.getElementById('descricao').value);
             
+            // Adicionar tags de comportamento
+            const tagsValue = document.getElementById('behavior_tags').value || '[]';
+            console.log('[FRONTEND] Tags selecionadas:', tagsValue);
+            formData.append('behavior_tags', tagsValue);
+            
             // Adicionar foto se selecionada
             const fotoFile = document.getElementById('foto').files[0];
             if (fotoFile) {
                 formData.append('foto', fotoFile);
             }
+            
+            console.log('[FRONTEND] Enviando pet ao backend...');
             
             try {
                 const response = await fetch('http://127.0.0.1:5000/api/pets', {
