@@ -502,6 +502,95 @@
             
             // Carregar ao iniciar a página
             carregarEstatisticas();
+            carregarAlertasVacinas();
+            carregarProximosAgendamentos();
+            
+            // Carregar alertas de vacinas vencidas
+            async function carregarAlertasVacinas() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/api/dashboard/vacinas-vencidas');
+                    const data = await response.json();
+                    
+                    if (data.success && data.vacinas_vencidas.length > 0) {
+                        const alertasList = document.querySelector('.alert-block ul');
+                        
+                        // Limpar alertas estáticos
+                        alertasList.innerHTML = '';
+                        
+                        // Adicionar alertas de vacinas vencidas
+                        data.vacinas_vencidas.forEach(vacina => {
+                            const li = document.createElement('li');
+                            li.className = 'alert-item danger';
+                            
+                            let mensagem = '';
+                            if (vacina.status === 'sem_vacinacao') {
+                                mensagem = 'Nenhuma vacinação cadastrada';
+                            } else {
+                                mensagem = `Vencida há ${vacina.dias_apos_vencimento} dias`;
+                            }
+                            
+                            li.innerHTML = `
+                                <i class="fas fa-syringe"></i> 
+                                <div>
+                                    <strong>Vacina VENCIDA! (${vacina.pet_name})</strong>
+                                    <p style="font-size: 14px; color: #777;">${mensagem}</p>
+                                </div>
+                            `;
+                            
+                            alertasList.appendChild(li);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar alertas de vacinas:', error);
+                }
+            }
+            
+            // Carregar próximos agendamentos
+            async function carregarProximosAgendamentos() {
+                try {
+                    const response = await fetch('http://127.0.0.1:5000/api/dashboard/proximos-agendamentos');
+                    const data = await response.json();
+                    
+                    if (data.success && data.agendamentos.length > 0) {
+                        const alertasList = document.querySelector('.alert-block ul');
+                        
+                        // Adicionar agendamentos futuros
+                        data.agendamentos.forEach(agendamento => {
+                            const li = document.createElement('li');
+                            li.className = 'alert-item';
+                            
+                            // Formatar data em português
+                            const dataObj = new Date(agendamento.data_agendada + 'T00:00:00');
+                            const dataFormatada = dataObj.toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: 'long',
+                                year: 'numeric'
+                            });
+                            
+                            let mensagemDias = '';
+                            if (agendamento.dias_ate === 0) {
+                                mensagemDias = 'Hoje!';
+                            } else if (agendamento.dias_ate === 1) {
+                                mensagemDias = 'Amanhã';
+                            } else {
+                                mensagemDias = `Em ${agendamento.dias_ate} dias`;
+                            }
+                            
+                            li.innerHTML = `
+                                <i class="fas ${agendamento.icone}"></i> 
+                                <div>
+                                    <strong>${agendamento.tipo_label} Agendado (${agendamento.pet_name})</strong>
+                                    <p style="font-size: 14px; color: #777;">${mensagemDias} - ${dataFormatada}</p>
+                                </div>
+                            `;
+                            
+                            alertasList.appendChild(li);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Erro ao carregar próximos agendamentos:', error);
+                }
+            }
         </script>
         <div class="dashboard-header">
             <h1>Visão Geral da Sua Nuvem</h1>

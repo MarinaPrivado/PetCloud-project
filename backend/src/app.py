@@ -239,6 +239,140 @@ def dashboard_stats():
     finally:
         db.close()
 
+# Rota para detalhes de vacinas vencidas
+@app.route('/api/dashboard/vacinas-vencidas', methods=['GET'])
+def vacinas_vencidas_detalhes():
+    db = SessionLocal()
+    try:
+        hoje = datetime.now()
+        data_limite = hoje - timedelta(days=365)  # 1 ano atrás
+        
+        vacinas_vencidas_lista = []
+        
+        # Buscar todos os pets
+        todos_pets = db.query(Pet).all()
+        
+        for pet in todos_pets:
+            # Buscar todas as vacinações do pet (serviços do tipo 'vacinacao')
+            vacinacoes_pet = db.query(Servico).filter(
+                Servico.pet_id == pet.id,
+                Servico.tipo == 'vacinacao'
+            ).order_by(Servico.data_agendada.desc()).all()
+            
+            if not vacinacoes_pet:
+                # Pet sem nenhuma vacinação agendada
+                vacinas_vencidas_lista.append({
+                    'pet_id': pet.id,
+                    'pet_name': pet.name,
+                    'status': 'sem_vacinacao',
+                    'mensagem': 'Nenhuma vacinação cadastrada',
+                    'dias_vencida': None
+                })
+            else:
+                # Verificar a última vacinação
+                ultima_vacinacao = vacinacoes_pet[0]
+                if ultima_vacinacao.data_agendada < data_limite.date():
+                    # Calcular total de dias desde a vacinação
+                    dias_desde_vacinacao = (hoje.date() - ultima_vacinacao.data_agendada).days
+                    # Calcular há quantos dias está vencida (após 1 ano do vencimento)
+                    dias_apos_vencimento = dias_desde_vacinacao - 365
+                    
+                    vacinas_vencidas_lista.append({
+                        'pet_id': pet.id,
+                        'pet_name': pet.name,
+                        'status': 'vencida',
+                        'ultima_vacinacao': ultima_vacinacao.data_agendada.isoformat(),
+                        'dias_desde_vacinacao': dias_desde_vacinacao,
+                        'dias_apos_vencimento': dias_apos_vencimento,
+                        'mensagem': f'Vencida há {dias_apos_vencimento} dias'
+                    })
+        
+        print(f"[VACINAS VENCIDAS] Total: {len(vacinas_vencidas_lista)}")
+        
+        return jsonify({
+            'success': True,
+            'vacinas_vencidas': vacinas_vencidas_lista,
+            'total': len(vacinas_vencidas_lista)
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERRO] Erro ao buscar vacinas vencidas: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao buscar vacinas vencidas'
+        }), 500
+    finally:
+        db.close()
+
+# Rota para próximos agendamentos
+@app.route('/api/dashboard/proximos-agendamentos', methods=['GET'])
+def proximos_agendamentos():
+    db = SessionLocal()
+    try:
+        hoje = datetime.now().date()
+        # Buscar agendamentos futuros (próximos 30 dias)
+        data_limite = hoje + timedelta(days=30)
+        
+        agendamentos = db.query(Servico).filter(
+            Servico.data_agendada >= hoje,
+            Servico.data_agendada <= data_limite
+        ).order_by(Servico.data_agendada.asc()).all()
+        
+        agendamentos_lista = []
+        
+        for servico in agendamentos:
+            pet = db.query(Pet).filter(Pet.id == servico.pet_id).first()
+            
+            if pet:
+                dias_ate_agendamento = (servico.data_agendada - hoje).days
+                
+                # Definir ícone e tipo baseado no serviço
+                if servico.tipo == 'vacinacao':
+                    icone = 'fa-syringe'
+                    tipo_label = 'Vacinação'
+                elif servico.tipo == 'banho':
+                    icone = 'fa-cut'
+                    tipo_label = 'Banho'
+                elif servico.tipo == 'consulta':
+                    icone = 'fa-notes-medical'
+                    tipo_label = 'Consulta'
+                else:
+                    icone = 'fa-calendar-check'
+                    tipo_label = servico.tipo.capitalize()
+                
+                agendamentos_lista.append({
+                    'pet_id': pet.id,
+                    'pet_name': pet.name,
+                    'tipo': servico.tipo,
+                    'tipo_label': tipo_label,
+                    'data_agendada': servico.data_agendada.isoformat(),
+                    'dias_ate': dias_ate_agendamento,
+                    'clinica': servico.clinica,
+                    'veterinario': servico.veterinario,
+                    'icone': icone
+                })
+        
+        print(f"[AGENDAMENTOS] Total de próximos agendamentos: {len(agendamentos_lista)}")
+        
+        return jsonify({
+            'success': True,
+            'agendamentos': agendamentos_lista,
+            'total': len(agendamentos_lista)
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERRO] Erro ao buscar próximos agendamentos: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao buscar próximos agendamentos'
+        }), 500
+    finally:
+        db.close()
+
 # Rota para deletar pet
 @app.route('/api/pets/<int:pet_id>', methods=['DELETE'])
 def deletar_pet(pet_id):
