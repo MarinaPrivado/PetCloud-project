@@ -202,6 +202,19 @@
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
+        .chat-message.bot-loading {
+            background: #f0f0f0;
+            color: #666;
+            align-self: flex-start;
+            font-style: italic;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        
         .chat-input-container {
             display: flex;
             gap: 10px;
@@ -456,7 +469,7 @@
                 <li><a href="/dashboard.html" class="nav-link">Home</a></li>
                 <li><a href="/listagem.html" class="nav-link">Pets</a></li>
                 <li><a href="/concurso.html" class="nav-link">Concursos Pets</a></li>
-                <li><a href="index.html">Sair</a></li>
+                <li><a href="#" onclick="logout(); return false;">Sair</a></li>
             </ul>
         </nav>
     </header>
@@ -502,21 +515,54 @@
             
             // Carregar ao iniciar a página
             carregarEstatisticas();
-            carregarAlertasVacinas();
-            carregarProximosAgendamentos();
+            
+            // Aguardar DOM estar pronto antes de carregar alertas
+            setTimeout(() => {
+                console.log('[DEBUG] Iniciando carregamento de alertas...');
+                carregarTodosAlertas();
+            }, 100);
+            
+            // Carregar todos os alertas e notificações
+            async function carregarTodosAlertas() {
+                console.log('[DEBUG] Função carregarTodosAlertas() executada');
+                const alertasList = document.querySelector('.alert-block ul');
+                
+                // Verificar se o elemento existe
+                if (!alertasList) {
+                    console.warn('Elemento .alert-block ul não encontrado');
+                    return;
+                }
+                
+                console.log('[DEBUG] Elemento .alert-block ul encontrado:', alertasList);
+                
+                // Limpar alertas estáticos uma única vez
+                alertasList.innerHTML = '';
+                
+                // Carregar vacinas vencidas e agendamentos em paralelo
+                console.log('[DEBUG] Chamando endpoints de alertas...');
+                await Promise.all([
+                    carregarAlertasVacinas(alertasList),
+                    carregarProximosAgendamentos(alertasList)
+                ]);
+                console.log('[DEBUG] Alertas carregados com sucesso');
+            }
             
             // Carregar alertas de vacinas vencidas
-            async function carregarAlertasVacinas() {
+            async function carregarAlertasVacinas(alertasList) {
                 try {
-                    const response = await fetch('http://127.0.0.1:5000/api/dashboard/vacinas-vencidas');
+                    console.log('[DEBUG] Carregando alertas de vacinas...');
+                    // Obter email do usuário logado
+                    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                    const userEmail = userData.email || '';
+                    console.log('[DEBUG] User email:', userEmail);
+                    
+                    const url = `http://127.0.0.1:5000/api/dashboard/vacinas-vencidas?user_email=${encodeURIComponent(userEmail)}`;
+                    console.log('[DEBUG] Chamando URL:', url);
+                    const response = await fetch(url);
                     const data = await response.json();
+                    console.log('[DEBUG] Resposta vacinas-vencidas:', data);
                     
                     if (data.success && data.vacinas_vencidas.length > 0) {
-                        const alertasList = document.querySelector('.alert-block ul');
-                        
-                        // Limpar alertas estáticos
-                        alertasList.innerHTML = '';
-                        
                         // Adicionar alertas de vacinas vencidas
                         data.vacinas_vencidas.forEach(vacina => {
                             const li = document.createElement('li');
@@ -546,14 +592,21 @@
             }
             
             // Carregar próximos agendamentos
-            async function carregarProximosAgendamentos() {
+            async function carregarProximosAgendamentos(alertasList) {
                 try {
-                    const response = await fetch('http://127.0.0.1:5000/api/dashboard/proximos-agendamentos');
+                    console.log('[DEBUG] Carregando próximos agendamentos...');
+                    // Obter email do usuário logado
+                    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                    const userEmail = userData.email || '';
+                    console.log('[DEBUG] User email:', userEmail);
+                    
+                    const url = `http://127.0.0.1:5000/api/dashboard/proximos-agendamentos?user_email=${encodeURIComponent(userEmail)}`;
+                    console.log('[DEBUG] Chamando URL:', url);
+                    const response = await fetch(url);
                     const data = await response.json();
+                    console.log('[DEBUG] Resposta proximos-agendamentos:', data);
                     
                     if (data.success && data.agendamentos.length > 0) {
-                        const alertasList = document.querySelector('.alert-block ul');
-                        
                         // Adicionar agendamentos futuros
                         data.agendamentos.forEach(agendamento => {
                             const li = document.createElement('li');
@@ -618,34 +671,7 @@
                 <section class="alert-block">
                     <h3><i class="fas fa-bell"></i> Alertas e Notificações</h3>
                     <ul>
-                        <li class="alert-item danger">
-                            <i class="fas fa-calendar-times"></i> 
-                            <div>
-                                <strong>Vacina Raiva VENCIDA! (Max)</strong>
-                                <p style="font-size: 14px; color: #777;">Agendar: 10 de Outubro, 2025</p>
-                            </div>
-                        </li>
-                        <li class="alert-item">
-                            <i class="fas fa-cut"></i> 
-                            <div>
-                                <strong>Banho Agendado (Fido)</strong>
-                                <p style="font-size: 14px; color: #777;">Próximo: 25 de Outubro, 2025</p>
-                            </div>
-                        </li>
-                        <li class="alert-item">
-                            <i class="fas fa-notes-medical"></i> 
-                            <div>
-                                <strong>Próxima Consulta (Luna)</strong>
-                                <p style="font-size: 14px; color: #777;">Agendar: 10 de Novembro, 2025</p>
-                            </div>
-                        </li>
-                        <li class="alert-item success">
-                            <i class="fas fa-syringe"></i> 
-                            <div>
-                                <strong>Vacina V8 OK (Fido)</strong>
-                                <p style="font-size: 14px; color: #777;">Próxima Dose: Outubro, 2026</p>
-                            </div>
-                        </li>
+                        <!-- Alertas serão carregados dinamicamente do banco de dados -->
                     </ul>
                 </section>
                 
@@ -657,7 +683,12 @@
 
             <div class="action-column">
                 <section class="action-block">
-                    <h3><i class="fas fa-calendar-check"></i> Agendamentos Rápidos</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0;"><i class="fas fa-calendar-check"></i> Agendamentos Rápidos</h3>
+                        <button onclick="limparConversa()" style="background: #ff6b6b; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px;">
+                            <i class="fas fa-trash"></i> Limpar
+                        </button>
+                    </div>
                     <div class="chat-container" id="chatContainer">
                         <div class="chat-message bot">
                             Olá! Como posso ajudar com seus agendamentos hoje?
@@ -668,7 +699,7 @@
                             type="text" 
                             class="chat-input" 
                             id="chatInput" 
-                            placeholder="Agende a vacinação de raiva do Thor para próxima semana"
+                            placeholder="Ex: Agendar vacinação para Thor..."
                             onkeypress="handleChatKeyPress(event)"
                         >
                         <button class="chat-send-btn" onclick="enviarMensagem()">
@@ -817,8 +848,11 @@
             document.getElementById('mensagemSucesso').style.display = 'none';
         }
 
+        // Histórico de conversa do chatbot (armazenado na memória)
+        let historicoChat = [];
+        
         // Funções do Chatbot de Agendamentos
-        function enviarMensagem() {
+        async function enviarMensagem() {
             const input = document.getElementById('chatInput');
             const mensagem = input.value.trim();
             
@@ -827,14 +861,74 @@
             // Adicionar mensagem do usuário
             adicionarMensagemChat(mensagem, 'user');
             
+            // Adicionar ao histórico
+            historicoChat.push({
+                role: 'user',
+                content: mensagem
+            });
+            
             // Limpar input
             input.value = '';
             
-            // Simular resposta do bot (depois conectar com API real)
-            setTimeout(() => {
-                const resposta = processarAgendamento(mensagem);
-                adicionarMensagemChat(resposta, 'bot');
-            }, 500);
+            // Mostrar mensagem de "processando"
+            adicionarMensagemChat('Processando sua solicitação...', 'bot-loading');
+            
+            try {
+                // Obter email do usuário logado
+                const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                const userEmail = userData.email;
+                
+                // Chamar API do chatbot com histórico
+                const response = await fetch('http://127.0.0.1:5000/api/chatbot/agendar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        mensagem: mensagem,
+                        historico: historicoChat.slice(0, -1), // Envia histórico sem a mensagem atual
+                        user_email: userEmail // Enviar email do usuário
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Remover mensagem de "processando"
+                const chatContainer = document.getElementById('chatContainer');
+                const loadingMsg = chatContainer.querySelector('.bot-loading');
+                if (loadingMsg) {
+                    loadingMsg.remove();
+                }
+                
+                // Adicionar resposta do bot
+                adicionarMensagemChat(data.message, 'bot');
+                
+                // Adicionar resposta do bot ao histórico
+                historicoChat.push({
+                    role: 'assistant',
+                    content: data.message
+                });
+                
+                // Se agendamento foi criado com sucesso, limpar histórico e recarregar alertas
+                if (data.success) {
+                    historicoChat = []; // Limpar histórico após agendamento completo
+                    setTimeout(() => {
+                        carregarTodosAlertas();
+                    }, 1000);
+                }
+                
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                
+                // Remover mensagem de "processando"
+                const chatContainer = document.getElementById('chatContainer');
+                const loadingMsg = chatContainer.querySelector('.bot-loading');
+                if (loadingMsg) {
+                    loadingMsg.remove();
+                }
+                
+                adicionarMensagemChat('Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.', 'bot');
+            }
         }
         
         function adicionarMensagemChat(texto, tipo) {
@@ -848,21 +942,15 @@
             chatContainer.scrollTop = chatContainer.scrollHeight;
         }
         
-        function processarAgendamento(mensagem) {
-            // Lógica simples de resposta (expandir depois com IA)
-            const msgLower = mensagem.toLowerCase();
+        function limparConversa() {
+            // Limpar histórico
+            historicoChat = [];
             
-            if (msgLower.includes('vacina') || msgLower.includes('vacinação')) {
-                return 'Entendido! Vou agendar a vacinação. Qual a data desejada?';
-            } else if (msgLower.includes('banho')) {
-                return 'Perfeito! Para qual dia você gostaria de agendar o banho?';
-            } else if (msgLower.includes('consulta')) {
-                return 'Agendar consulta veterinária. Você tem preferência de horário?';
-            } else if (msgLower.includes('próxima semana') || msgLower.includes('semana')) {
-                return 'Agendamento confirmado para a próxima semana! Você receberá uma notificação com os detalhes.';
-            } else {
-                return 'Como posso ajudar com esse agendamento? Tente especificar o tipo (vacina, banho, consulta) e a data.';
-            }
+            // Limpar mensagens visuais
+            const chatContainer = document.getElementById('chatContainer');
+            chatContainer.innerHTML = '<div class="chat-message bot">Olá! Como posso ajudar com seus agendamentos hoje?</div>';
+            
+            console.log('[CHAT] Conversa limpa');
         }
         
         function handleChatKeyPress(event) {
@@ -870,6 +958,8 @@
                 enviarMensagem();
             }
         }
+    </script>
+
     </script>
 </body>
 </html>

@@ -1,2 +1,27 @@
 backend/src/OAuthID.json
 backend/src/token.json
+
+# Environment variables (OpenAI API keys, etc.)
+.env
+backend/.env
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

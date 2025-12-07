@@ -21,11 +21,13 @@ async function login(email, password) {
 }
 
 function logout() {
-    // Limpar o localStorage
+    // Limpar completamente o localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('userData');
-    // Redirecionar para a página inicial
-    window.location.href = '/index.html';
+    localStorage.removeItem('user');
+    localStorage.clear(); // Garantir que tudo seja removido
+    // Redirecionar para a página inicial (caminho absoluto)
+    window.location.href = '/pages/index.html';
 }
 
 async function register(name, email, password) {
@@ -57,10 +59,4 @@ function saveUserData(userData) {
 // Função para verificar se o usuário está logado
 function isLoggedIn() {
     return localStorage.getItem('user') !== null;
-}
-
-// Função para fazer logout
-function logout() {
-    localStorage.removeItem('user');
-    window.location.href = '../pages/login.html';
 }

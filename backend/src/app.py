@@ -13,6 +13,22 @@ from models.PasswordReset import PasswordReset
 from models.Servico import Servico
 from models.Clinica import Clinica
 from config.database import SessionLocal, Base, engine
+from openai import OpenAI
+from dotenv import load_dotenv
+import json
+
+# Load environment variables from parent directory (backend/.env)
+env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env')
+load_dotenv(env_path)
+
+# Initialize OpenAI client
+openai_client = None
+if os.environ.get('OPENAI_API_KEY'):
+    openai_client = OpenAI(api_key=os.environ.get('OPENAI_API_KEY'))
+    print(f"[OPENAI] Cliente inicializado com sucesso")
+else:
+    print(f"[OPENAI] AVISO: Chave API não encontrada em {env_path}")
+
 
 
 
@@ -244,13 +260,22 @@ def dashboard_stats():
 def vacinas_vencidas_detalhes():
     db = SessionLocal()
     try:
+        # Obter email do usuário da query string
+        user_email = request.args.get('user_email', '')
+        
         hoje = datetime.now()
         data_limite = hoje - timedelta(days=365)  # 1 ano atrás
         
         vacinas_vencidas_lista = []
         
-        # Buscar todos os pets
-        todos_pets = db.query(Pet).all()
+        # Buscar usuário pelo email
+        user = db.query(User).filter(User.email == user_email).first() if user_email else None
+        
+        # Buscar pets do usuário ou todos se não autenticado
+        if user:
+            todos_pets = db.query(Pet).filter(Pet.owner_id == user.id).all()
+        else:
+            todos_pets = db.query(Pet).all()
         
         for pet in todos_pets:
             # Buscar todas as vacinações do pet (serviços do tipo 'vacinacao')
@@ -311,14 +336,29 @@ def vacinas_vencidas_detalhes():
 def proximos_agendamentos():
     db = SessionLocal()
     try:
+        # Obter email do usuário da query string
+        user_email = request.args.get('user_email', '')
+        
         hoje = datetime.now().date()
         # Buscar agendamentos futuros (próximos 30 dias)
         data_limite = hoje + timedelta(days=30)
         
-        agendamentos = db.query(Servico).filter(
-            Servico.data_agendada >= hoje,
-            Servico.data_agendada <= data_limite
-        ).order_by(Servico.data_agendada.asc()).all()
+        # Buscar usuário pelo email
+        user = db.query(User).filter(User.email == user_email).first() if user_email else None
+        
+        # Filtrar agendamentos por usuário
+        if user:
+            # Buscar agendamentos apenas dos pets do usuário
+            agendamentos = db.query(Servico).join(Pet).filter(
+                Pet.owner_id == user.id,
+                Servico.data_agendada >= hoje,
+                Servico.data_agendada <= data_limite
+            ).order_by(Servico.data_agendada.asc()).all()
+        else:
+            agendamentos = db.query(Servico).filter(
+                Servico.data_agendada >= hoje,
+                Servico.data_agendada <= data_limite
+            ).order_by(Servico.data_agendada.asc()).all()
         
         agendamentos_lista = []
         
@@ -370,6 +410,309 @@ def proximos_agendamentos():
             'success': False,
             'message': 'Erro ao buscar próximos agendamentos'
         }), 500
+    finally:
+        db.close()
+
+# Rota para chatbot - agendar com OpenAI
+@app.route('/api/chatbot/agendar', methods=['POST'])
+def chatbot_agendar():
+    """
+    Endpoint para processar mensagens do chatbot usando OpenAI GPT.
+    Extrai intenção de agendamento e cria registro no banco de dados.
+    """
+    print("[CHATBOT] Endpoint /api/chatbot/agendar chamado")
+    
+    if not openai_client:
+        print("[CHATBOT] ERRO: Cliente OpenAI não inicializado")
+        return jsonify({
+            'success': False,
+            'message': 'Chatbot não configurado. Configure a chave OPENAI_API_KEY no arquivo .env'
+        }), 503
+    
+    db = SessionLocal()
+    try:
+        data = request.get_json()
+        print(f"[CHATBOT] Dados recebidos: {data}")
+        mensagem = data.get('mensagem', '').strip()
+        historico = data.get('historico', [])  # Histórico de mensagens anteriores
+        user_email = data.get('user_email', '').strip()  # Email do usuário autenticado
+        
+        if not mensagem:
+            return jsonify({
+                'success': False,
+                'message': 'Por favor, envie uma mensagem'
+            }), 400
+        
+        # Buscar usuário pelo email
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não autenticado. Por favor, faça login novamente.'
+            }), 401
+        
+        print(f"[CHATBOT] Usuário autenticado: {user.name} (ID: {user.id}, Email: {user.email})")
+        
+        # Buscar lista de pets do usuário para contexto
+        pets = db.query(Pet).filter(Pet.owner_id == user.id).all()
+        pets_context = [{"nome": pet.name, "tipo": pet.type} for pet in pets]
+        
+        print(f"[CHATBOT] Pets do usuário: {[p.name for p in pets]}")
+        
+        # Criar mapeamento nome -> pet para validação posterior (apenas pets deste usuário)
+        pets_map = {pet.name.lower(): pet for pet in pets}
+        
+        # Buscar clínicas disponíveis (agrupadas por tipo de serviço)
+        clinicas = db.query(Clinica).all()
+        clinicas_por_servico = {}
+        clinicas_map = {}  # Mapeamento nome -> clinica para validação
+        
+        for c in clinicas:
+            if c.tipo_servico not in clinicas_por_servico:
+                clinicas_por_servico[c.tipo_servico] = []
+            clinicas_por_servico[c.tipo_servico].append({
+                "nome": c.nome,
+                "preco": c.preco_servico,
+                "veterinario": c.veterinario
+            })
+            clinicas_map[c.nome.lower()] = c
+        
+        # System prompt com instruções detalhadas
+        system_prompt = f"""Você é um assistente de agendamento para o PetCloud, uma plataforma de gerenciamento de pets.
+
+Pets disponíveis: {json.dumps(pets_context, ensure_ascii=False)}
+
+Clínicas disponíveis por tipo de serviço: {json.dumps(clinicas_por_servico, ensure_ascii=False)}
+
+IMPORTANTE: Você tem acesso ao HISTÓRICO COMPLETO da conversa. Use as mensagens anteriores para manter o contexto.
+- Se o usuário já informou o pet, tipo ou data anteriormente, NÃO peça novamente
+- SEMPRE analise TODO o histórico antes de perguntar algo
+- Se todas as informações já foram fornecidas no histórico, prossiga com o agendamento
+
+Sua função é extrair informações de agendamentos das mensagens dos usuários e retornar um JSON válido.
+
+REGRAS CRÍTICAS DE VALIDAÇÃO:
+1. NOME DO PET é OBRIGATÓRIO - Se não foi mencionado NO HISTÓRICO COMPLETO, retorne sucesso: false
+2. DATA PRECISA é OBRIGATÓRIA - Se não foi mencionada NO HISTÓRICO COMPLETO, retorne sucesso: false
+3. TIPO DE AGENDAMENTO é OBRIGATÓRIO - Se não foi mencionado NO HISTÓRICO COMPLETO, retorne sucesso: false
+4. CLÍNICA é OBRIGATÓRIA - O usuário DEVE escolher uma clínica da lista disponível
+
+FLUXO DE VALIDAÇÃO:
+ANTES DE PERGUNTAR QUALQUER COISA, analise TODO o histórico da conversa para ver se a informação já foi fornecida.
+
+1º. Verificar histórico completo - extrair pet, tipo, data e clínica mencionados ANTES
+2º. Se mencionar "próxima semana" SEM dia específico → Pergunte: "Qual dia da próxima semana?"
+3º. Se não encontrou nome do pet no histórico → Pergunte: "Para qual pet?" (liste os pets disponíveis)
+4º. Se não encontrou tipo no histórico → Pergunte: "Qual tipo de serviço?" (vacinação, banho ou consulta)
+5º. Se não encontrou data no histórico → Pergunte: "Para qual data?"
+6º. Se tem pet+tipo+data mas não tem clínica → Mostre as clínicas disponíveis:
+    - Liste TODAS as clínicas do tipo específico com nome, preço e veterinário
+    - Formate: "Clínicas disponíveis para [tipo]:\n1. [Nome] - R$ [preço] (Dr. [veterinario])\n2. ..."
+    - Peça: "Qual clínica você prefere?"
+7º. Se tem pet+tipo+data+clínica → sucesso: true e crie o agendamento
+
+EXTRAÇÃO DE INFORMAÇÕES DO HISTÓRICO:
+- Procure menções de nomes de pets (Moana, Teste, Hulk) em QUALQUER mensagem anterior
+- Procure tipos de serviço (consulta, vacinação, banho) em QUALQUER mensagem anterior
+- Procure datas (amanhã, segunda, etc) em QUALQUER mensagem anterior
+- Procure nomes de clínicas mencionadas pelo usuário
+
+Tipos de serviço disponíveis:
+- vacinacao (vacinação, vacina)
+- banho (banho, tosa, banho e tosa)
+- consulta (consulta, check-up)
+
+Para datas relativas (SOMENTE estas são aceitas):
+- "amanhã" = adicione 1 dia à data atual
+- "depois de amanhã" = adicione 2 dias à data atual
+- "segunda-feira", "terça-feira", etc. = próximo dia da semana mencionado
+- "segunda da próxima semana" = segunda-feira da próxima semana
+- "daqui a X dias" = adicione X dias à data atual
+- Data específica (dia/mês ou completa) = formate como YYYY-MM-DD
+
+Datas NÃO ACEITAS (retorne sucesso: false):
+- "próxima semana" (sem dia específico)
+- "semana que vem" (sem dia específico)
+- "em breve", "logo", "qualquer dia", "quando possível"
+
+⚠️ FORMATO DE RESPOSTA OBRIGATÓRIO ⚠️
+Você DEVE responder APENAS E EXCLUSIVAMENTE com um objeto JSON puro, sem texto antes ou depois.
+NÃO inclua explicações, markdown (```json), ou qualquer texto adicional.
+APENAS o JSON puro conforme o formato abaixo:
+
+{{
+    "sucesso": true/false,
+    "tipo": "vacinacao" | "banho" | "consulta" (ou null se não informado),
+    "pet_nome": "nome do pet" (ou null se não informado),
+    "data": "YYYY-MM-DD" (ou null se não informado),
+    "clinica_nome": "nome da clínica escolhida" (ou null),
+    "observacoes": "texto com detalhes",
+    "mensagem_usuario": "mensagem amigável de confirmação ou pedido de esclarecimento"
+}}
+
+NOTA: Retorne apenas os NOMES, não os IDs. O sistema fará a conversão automaticamente.
+
+IMPORTANTE sobre clínicas:
+- Quando o usuário mencionar o nome de uma clínica, encontre o ID correspondente nas clínicas disponíveis para o tipo de serviço
+- Se o usuário disser "primeira", "opção 1", use a primeira clínica da lista
+- Se disser "segunda", "opção 2", use a segunda clínica, e assim por diante
+- Inclua automaticamente o preço e veterinário da clínica escolhida
+
+Exemplos de validação:
+- "Agendar vacina" → sucesso: false, mensagem: "Para qual pet você gostaria de agendar a vacinação? Pets disponíveis: [lista]"
+- "Vacina para Thor" → sucesso: false, mensagem: "Para qual data você gostaria de agendar?"
+- "Vacina para Thor amanhã" → sucesso: false, mensagem: "Clínicas disponíveis para vacinação:\n1. [Nome] - R$ [preço] (Dr. [vet])\n2. [Nome2] - R$ [preço2]\nQual clínica você prefere?"
+- "Primeira" (após mostrar clínicas) → sucesso: true, seleciona primeira clínica com preço e veterinário
+- "Vacina para Thor" → sucesso: false, mensagem: "Para qual data você gostaria de agendar a vacinação do Thor?"
+- "Agendar para Thor amanhã" → sucesso: false, mensagem: "Qual tipo de serviço você deseja agendar? (vacinação, banho ou consulta)"
+- "Agendar vacina próxima semana" → sucesso: false, mensagem: "Qual dia da próxima semana? (segunda, terça, quarta, quinta, sexta)"
+- "Vacina para Thor amanhã" → sucesso: false, mensagem: "Clínicas disponíveis para vacinação:\n1. [Nome] - R$ [preço]\nQual clínica você prefere?"
+- "Primeira clínica" → sucesso: true (seleciona clínica 1 com preço correto)
+
+Data de hoje: {datetime.now().strftime('%Y-%m-%d')}"""
+
+        # Chamada para OpenAI
+        print(f"[CHATBOT] Processando mensagem: {mensagem}")
+        print(f"[CHATBOT] Histórico: {len(historico)} mensagens anteriores")
+        
+        # Construir mensagens com histórico
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Adicionar histórico de conversas (últimas 10 mensagens)
+        for msg in historico[-10:]:
+            messages.append({
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", "")
+            })
+        
+        # Adicionar mensagem atual
+        messages.append({"role": "user", "content": mensagem})
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.1,  # Temperatura mais baixa para respostas consistentes
+            max_tokens=500,
+            response_format={ "type": "json_object" }  # Força resposta em JSON
+        )
+        
+        # Extrair resposta
+        resposta_texto = response.choices[0].message.content.strip()
+        print(f"[CHATBOT] Resposta OpenAI: {resposta_texto}")
+        
+        # Parse JSON da resposta
+        try:
+            # Remover markdown code blocks se existirem
+            if resposta_texto.startswith('```'):
+                resposta_texto = resposta_texto.split('```')[1]
+                if resposta_texto.startswith('json'):
+                    resposta_texto = resposta_texto[4:]
+                resposta_texto = resposta_texto.strip()
+            
+            resposta_json = json.loads(resposta_texto)
+        except json.JSONDecodeError as e:
+            print(f"[ERRO] Erro ao fazer parse do JSON: {e}")
+            print(f"[ERRO] Resposta recebida: {resposta_texto}")
+            return jsonify({
+                'success': False,
+                'message': 'Desculpe, não consegui processar sua solicitação. Tente reformular a mensagem.'
+            }), 200
+        
+        # Se não foi possível extrair informações completas
+        if not resposta_json.get('sucesso', False):
+            return jsonify({
+                'success': False,
+                'message': resposta_json.get('mensagem_usuario', 'Não entendi sua solicitação. Pode reformular?')
+            }), 200
+        
+        # Validar e buscar pet pelo nome
+        pet_nome = resposta_json.get('pet_nome', '').strip()
+        pet = pets_map.get(pet_nome.lower())
+        if not pet:
+            return jsonify({
+                'success': False,
+                'message': f"Não encontrei o pet '{pet_nome}'. Pets disponíveis: {', '.join([p.name for p in pets])}"
+            }), 200
+        
+        print(f"[CHATBOT] Pet encontrado: {pet.name} (ID: {pet.id})")
+        
+        # Validar e buscar clínica pelo nome
+        clinica_nome = resposta_json.get('clinica_nome', '').strip()
+        clinica = clinicas_map.get(clinica_nome.lower())
+        if not clinica:
+            return jsonify({
+                'success': False,
+                'message': f"Não encontrei a clínica '{clinica_nome}'. Por favor, escolha uma das clínicas disponíveis."
+            }), 200
+        
+        print(f"[CHATBOT] Clínica encontrada: {clinica.nome} (ID: {clinica.id})")
+        
+        # Criar serviço no banco de dados
+        novo_servico = Servico(
+            tipo=resposta_json.get('tipo'),
+            data_agendada=datetime.strptime(resposta_json.get('data'), '%Y-%m-%d'),
+            pet_id=pet.id,
+            clinica_id=clinica.id,
+            veterinario=clinica.veterinario,
+            preco=clinica.preco_servico
+        )
+        
+        print(f"[CHATBOT] Criando serviço: pet_id={pet.id}, clinica_id={clinica.id}, tipo={resposta_json.get('tipo')}, data={resposta_json.get('data')}")
+        
+        db.add(novo_servico)
+        db.commit()
+        db.refresh(novo_servico)
+        
+        print(f"[CHATBOT] Agendamento criado com sucesso - ID: {novo_servico.id}")
+        
+        # Mensagem de confirmação
+        tipo_texto = {
+            'vacinacao': 'vacinação',
+            'banho': 'banho',
+            'consulta': 'consulta'
+        }.get(resposta_json.get('tipo'), 'serviço')
+        
+        data_formatada = datetime.strptime(resposta_json.get('data'), '%Y-%m-%d').strftime('%d/%m/%Y')
+        
+        mensagem_confirmacao = resposta_json.get('mensagem_usuario', 
+            f"✅ Agendamento confirmado! {tipo_texto.capitalize()} para {pet.name} em {data_formatada}."
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': mensagem_confirmacao,
+            'agendamento': {
+                'id': novo_servico.id,
+                'tipo': novo_servico.tipo,
+                'data': novo_servico.data_agendada.strftime('%d/%m/%Y'),
+                'pet_nome': pet.name
+            }
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERRO] Erro no chatbot: {e}")
+        print(f"[ERRO] Tipo do erro: {type(e).__name__}")
+        import traceback
+        traceback.print_exc()
+        db.rollback()
+        
+        # Mensagem de erro mais específica
+        erro_msg = str(e)
+        if 'API key' in erro_msg or 'authentication' in erro_msg.lower():
+            return jsonify({
+                'success': False,
+                'message': 'Erro de autenticação com OpenAI. Verifique a chave API.'
+            }), 500
+        elif 'rate limit' in erro_msg.lower():
+            return jsonify({
+                'success': False,
+                'message': 'Limite de requisições atingido. Aguarde alguns minutos.'
+            }), 500
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Desculpe, ocorreu um erro ao processar sua solicitação. Tente novamente.'
+            }), 500
     finally:
         db.close()
 
