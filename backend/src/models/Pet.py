@@ -25,6 +25,7 @@ class Pet(Base):
     type = Column(String, nullable=True)  # Espécie opcional
     owner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     photo_url = Column(String, nullable=True)  # URL da foto do pet
+    behavior_tags = Column(String, default=json.dumps([]), nullable=True)  # Tags de comportamento
     health_records = Column(String, default=json.dumps([]), nullable=True)
     feeding_schedule = Column(String, default=json.dumps([]), nullable=True)
     created_at = Column(DateTime, default=datetime.now)
@@ -51,6 +52,14 @@ class Pet(Base):
     def set_feeding_schedule(self, schedule: List[Dict]) -> None:
         """Set feeding schedule from a Python list"""
         self.feeding_schedule = json.dumps(schedule)
+
+    def get_behavior_tags(self) -> List[str]:
+        """Get behavior tags as a Python list"""
+        return json.loads(self.behavior_tags) if self.behavior_tags else []
+
+    def set_behavior_tags(self, tags: List[str]) -> None:
+        """Set behavior tags from a Python list"""
+        self.behavior_tags = json.dumps(tags)
 
     def set_owner(self, user: Optional['User']) -> None:
         """Set the owner of the pet."""
@@ -125,6 +134,7 @@ class Pet(Base):
             'birth_date': self.birth_date.isoformat() if self.birth_date else None,
             'age': self.get_age() if hasattr(self, 'get_age') else None,
             'photo_url': self.photo_url if hasattr(self, 'photo_url') else None,
+            'behavior_tags': self.get_behavior_tags() if hasattr(self, 'behavior_tags') else [],
             'owner': {'id': self.owner.id, 'name': self.owner.name} if hasattr(self, 'owner') and self.owner else None,
             'health_records': self.health_records if hasattr(self, 'health_records') else [],
             'feeding_schedule': [

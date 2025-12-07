@@ -62,6 +62,16 @@ def cadastrar_pet():
         pet_type = request.form.get('especie')
         descricao = request.form.get('descricao')
         
+        # Processar tags de comportamento
+        behavior_tags_str = request.form.get('behavior_tags', '[]')
+        print(f"[DEBUG] behavior_tags recebido (string): {behavior_tags_str}")
+        try:
+            behavior_tags = json.loads(behavior_tags_str)
+            print(f"[DEBUG] behavior_tags parseado (lista): {behavior_tags}")
+        except Exception as e:
+            print(f"[DEBUG] Erro ao parsear behavior_tags: {e}")
+            behavior_tags = []
+        
         # Processar imagem se enviada
         photo_url = None
         if 'foto' in request.files:
@@ -83,6 +93,7 @@ def cadastrar_pet():
         birth_date = data.get('birth_date')
         pet_type = data.get('especie')
         descricao = data.get('descricao')
+        behavior_tags = data.get('behavior_tags', [])
         photo_url = None
 
     # Validação dos campos obrigatórios
@@ -104,10 +115,15 @@ def cadastrar_pet():
 
     db = SessionLocal()
     pet = Pet(name=name, breed=breed, birth_date=birth_date_dt, type=pet_type, photo_url=photo_url)
+    
+    # Adicionar tags de comportamento
+    if behavior_tags:
+        pet.behavior_tags = json.dumps(behavior_tags)
+    
     db.add(pet)
     db.commit()
     db.refresh(pet)
-    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}, foto={pet.photo_url}")
+    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}, foto={pet.photo_url}, tags={behavior_tags}")
     db.close()
     return jsonify({
         'success': True,
@@ -117,7 +133,8 @@ def cadastrar_pet():
             'name': pet.name,
             'breed': pet.breed,
             'birth_date': pet.birth_date.strftime('%Y-%m-%d'),
-            'photo_url': pet.photo_url
+            'photo_url': pet.photo_url,
+            'behavior_tags': behavior_tags
         }
     }), 201
 
@@ -147,6 +164,44 @@ def listar_pets():
         return jsonify({
             'success': False,
             'message': 'Erro ao listar pets'
+        }), 500
+    finally:
+        db.close()
+
+# Rota para deletar pet
+@app.route('/api/pets/<int:pet_id>', methods=['DELETE'])
+def deletar_pet(pet_id):
+    db = SessionLocal()
+    try:
+        pet = db.query(Pet).filter(Pet.id == pet_id).first()
+        
+        if not pet:
+            return jsonify({
+                'success': False,
+                'message': 'Pet não encontrado'
+            }), 404
+        
+        # Deletar foto se existir
+        if pet.photo_url:
+            photo_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(pet.photo_url))
+            if os.path.exists(photo_path):
+                os.remove(photo_path)
+        
+        db.delete(pet)
+        db.commit()
+        
+        print(f"[DELETE] Pet {pet.name} (ID: {pet_id}) deletado com sucesso")
+        return jsonify({
+            'success': True,
+            'message': 'Pet deletado com sucesso'
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f"[ERRO] Erro ao deletar pet: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao deletar pet'
         }), 500
     finally:
         db.close()
