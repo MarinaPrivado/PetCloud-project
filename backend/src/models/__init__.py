@@ -8,6 +8,7 @@ from .User import User
 from .Pet import Pet
 from .PasswordReset import PasswordReset
 from .Servico import Servico
+from .Concurso import Concurso
 from .Clinica import Clinica
 
 

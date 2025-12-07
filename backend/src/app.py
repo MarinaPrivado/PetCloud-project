@@ -12,6 +12,7 @@ from models.User import User
 from models.PasswordReset import PasswordReset
 from models.Servico import Servico
 from models.Clinica import Clinica
+from models.Concurso import Concurso
 from config.database import SessionLocal, Base, engine
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -168,7 +169,8 @@ def listar_pets():
                 'type': pet.type,
                 'breed': pet.breed,
                 'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None,
-                'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None
+                'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None,
+                'owner_id': pet.owner_id if hasattr(pet, 'owner_id') else None
             })
         print(f"[LISTAGEM] Retornando {len(pets_list)} pets")
         return jsonify({
@@ -184,6 +186,42 @@ def listar_pets():
     finally:
         db.close()
 
+
+@app.route('/api/users', methods=['GET'])
+def listar_usuarios():
+    """Endpoint para listar usuários (com filtro opcional por email)"""
+    db = SessionLocal()
+    try:
+        email = request.args.get('email')
+        
+        if email:
+            users = db.query(User).filter(User.email == email).all()
+        else:
+            users = db.query(User).all()
+        
+        users_list = []
+        for user in users:
+            users_list.append({
+                'id': user.id,
+                'name': user.name,
+                'email': user.email
+            })
+        
+        return jsonify({
+            'success': True,
+            'users': users_list
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERRO] Erro ao listar usuários: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao listar usuários'
+        }), 500
+    finally:
+        db.close()
+
+
 # Rota para estatísticas do dashboard
 @app.route('/api/dashboard/stats', methods=['GET'])
 def dashboard_stats():
@@ -192,14 +230,15 @@ def dashboard_stats():
         # Total de pets registrados
         total_pets = db.query(Pet).count()
         
-        # Calcular gastos do último mês
+        # Calcular gastos do mês atual (dezembro/2025)
         hoje = datetime.now()
         primeiro_dia_mes_atual = hoje.replace(day=1)
+        ultimo_dia_mes_atual = (primeiro_dia_mes_atual.replace(month=primeiro_dia_mes_atual.month % 12 + 1, day=1) - timedelta(days=1)) if primeiro_dia_mes_atual.month < 12 else primeiro_dia_mes_atual.replace(day=31)
         
-        # Buscar serviços do mês atual com preço
+        # Buscar serviços do mês atual (1 a 31 de dezembro) com preço
         servicos_mes = db.query(Servico).filter(
             Servico.data_agendada >= primeiro_dia_mes_atual,
-            Servico.data_agendada <= hoje,
+            Servico.data_agendada <= ultimo_dia_mes_atual,
             Servico.preco.isnot(None)
         ).all()
         
@@ -1365,5 +1404,190 @@ def create_servico():
         db.close()
 
 
+# ==================== ENDPOINTS DE CONCURSO ====================
+
+@app.route('/api/concurso/enviar', methods=['POST'])
+def enviar_foto_concurso():
+    """Endpoint para enviar foto ao concurso"""
+    db = SessionLocal()
+    try:
+        # Verificar se há arquivo na requisição
+        if 'imagem' not in request.files:
+            return jsonify({'success': False, 'message': 'Nenhuma imagem foi enviada.'}), 400
+        
+        file = request.files['imagem']
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'message': 'Nenhuma imagem selecionada.'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'success': False, 'message': 'Formato de arquivo não permitido. Use PNG, JPG, JPEG, GIF ou WEBP.'}), 400
+        
+        # Obter dados do formulário
+        pet_id = request.form.get('pet_id')
+        user_email = request.form.get('user_email')
+        descricao = request.form.get('descricao', '')
+        
+        if not pet_id or not user_email:
+            return jsonify({'success': False, 'message': 'Pet e usuário são obrigatórios.'}), 400
+        
+        # Verificar se usuário existe
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado.'}), 404
+        
+        # Verificar se pet existe e pertence ao usuário
+        pet = db.query(Pet).filter(Pet.id == pet_id, Pet.owner_id == user.id).first()
+        if not pet:
+            return jsonify({'success': False, 'message': 'Pet não encontrado ou não pertence a este usuário.'}), 404
+        
+        # Verificar se o pet já tem foto no concurso
+        concurso_existente = db.query(Concurso).filter(Concurso.pet_id == pet_id).first()
+        if concurso_existente:
+            return jsonify({'success': False, 'message': f'{pet.name} já tem uma foto enviada no concurso!'}), 400
+        
+        # Salvar arquivo com nome único
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_filename = f'{timestamp}_{secrets.token_hex(8)}_{filename}'
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(filepath)
+        
+        # Criar registro no banco
+        novo_concurso = Concurso(
+            pet_id=pet_id,
+            user_id=user.id,
+            imagem_url=f'/uploads/{unique_filename}',
+            descricao=descricao,
+            votos=0
+        )
+        
+        db.add(novo_concurso)
+        db.commit()
+        db.refresh(novo_concurso)
+        
+        print(f'[CONCURSO] Foto enviada: Pet {pet.name} (ID: {pet_id}) - User: {user.name}')
+        
+        return jsonify({
+            'success': True,
+            'message': f'Foto de {pet.name} enviada com sucesso para o concurso!',
+            'concurso': novo_concurso.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao enviar foto ao concurso: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao enviar foto.'}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/concurso/fotos', methods=['GET'])
+def listar_fotos_concurso():
+    """Endpoint para listar todas as fotos do concurso"""
+    db = SessionLocal()
+    try:
+        fotos = db.query(Concurso).order_by(Concurso.votos.desc(), Concurso.data_envio.desc()).all()
+        
+        return jsonify({
+            'success': True,
+            'total': len(fotos),
+            'fotos': [foto.to_dict() for foto in fotos]
+        }), 200
+        
+    except Exception as e:
+        print(f'[ERRO] Erro ao listar fotos do concurso: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao carregar fotos.'}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/concurso/votar/<int:concurso_id>', methods=['POST'])
+def votar_foto_concurso(concurso_id):
+    """Endpoint para votar em uma foto do concurso"""
+    db = SessionLocal()
+    try:
+        foto = db.query(Concurso).filter(Concurso.id == concurso_id).first()
+        
+        if not foto:
+            return jsonify({'success': False, 'message': 'Foto não encontrada.'}), 404
+        
+        foto.votos += 1
+        db.commit()
+        
+        print(f'[CONCURSO] Voto registrado: Foto ID {concurso_id} - Total: {foto.votos} votos')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Voto registrado com sucesso!',
+            'votos': foto.votos
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao registrar voto: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao registrar voto.'}), 500
+    finally:
+        db.close()
+
+
+@app.route('/api/concurso/deletar/<int:concurso_id>', methods=['DELETE'])
+def deletar_foto_concurso(concurso_id):
+    """Endpoint para deletar uma foto do concurso"""
+    db = SessionLocal()
+    try:
+        # Obter dados do usuário
+        user_email = request.args.get('user_email')
+        
+        print(f"[CONCURSO DELETE] Recebido user_email: {user_email}")
+        print(f"[CONCURSO DELETE] request.args: {request.args}")
+        print(f"[CONCURSO DELETE] concurso_id: {concurso_id}")
+        
+        if not user_email:
+            return jsonify({'success': False, 'message': 'Email do usuário é obrigatório.'}), 400
+        
+        # Verificar se usuário existe
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado.'}), 404
+        
+        # Buscar foto do concurso
+        foto = db.query(Concurso).filter(Concurso.id == concurso_id).first()
+        
+        if not foto:
+            return jsonify({'success': False, 'message': 'Foto não encontrada.'}), 404
+        
+        # Verificar se o usuário é o dono da foto
+        if foto.user_id != user.id:
+            return jsonify({'success': False, 'message': 'Você não tem permissão para deletar esta foto.'}), 403
+        
+        # Deletar arquivo físico
+        if foto.imagem_url:
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(foto.imagem_url))
+            if os.path.exists(filepath):
+                os.remove(filepath)
+                print(f'[CONCURSO] Arquivo deletado: {filepath}')
+        
+        # Deletar do banco
+        pet_name = foto.pet.name if foto.pet else 'Unknown'
+        db.delete(foto)
+        db.commit()
+        
+        print(f'[CONCURSO] Foto deletada: ID {concurso_id} - Pet: {pet_name} - User: {user.name}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Foto deletada com sucesso!'
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao deletar foto: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao deletar foto.'}), 500
+    finally:
+        db.close()
+
+
 if __name__ == '__main__':
+
     app.run(debug=True, port=5000)
