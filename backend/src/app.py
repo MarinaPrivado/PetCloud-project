@@ -768,27 +768,52 @@ def deletar_pet(pet_id):
                 'message': 'Pet não encontrado'
             }), 404
         
-        # Deletar foto se existir
+        # Deletar serviços relacionados (vacinas, consultas, etc)
+        from models.Servico import Servico
+        servicos = db.query(Servico).filter(Servico.pet_id == pet_id).all()
+        for servico in servicos:
+            db.delete(servico)
+        print(f"[DELETE] {len(servicos)} serviço(s) relacionado(s) deletado(s)")
+        
+        # Deletar fotos do concurso relacionadas
+        from models.Concurso import Concurso
+        concursos = db.query(Concurso).filter(Concurso.pet_id == pet_id).all()
+        for concurso in concursos:
+            # Deletar arquivo físico da foto do concurso
+            if concurso.imagem_url:
+                concurso_photo_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(concurso.imagem_url))
+                if os.path.exists(concurso_photo_path):
+                    os.remove(concurso_photo_path)
+                    print(f"[DELETE] Arquivo do concurso deletado: {concurso_photo_path}")
+            db.delete(concurso)
+        print(f"[DELETE] {len(concursos)} submissão(ões) de concurso deletada(s)")
+        
+        # Deletar foto do perfil do pet se existir
         if pet.photo_url:
             photo_path = os.path.join(app.config['UPLOAD_FOLDER'], os.path.basename(pet.photo_url))
             if os.path.exists(photo_path):
                 os.remove(photo_path)
+                print(f"[DELETE] Foto do pet deletada: {photo_path}")
         
+        # Deletar o pet
+        pet_name = pet.name
         db.delete(pet)
         db.commit()
         
-        print(f"[DELETE] Pet {pet.name} (ID: {pet_id}) deletado com sucesso")
+        print(f"[DELETE] Pet {pet_name} (ID: {pet_id}) deletado com sucesso")
         return jsonify({
             'success': True,
-            'message': 'Pet deletado com sucesso'
+            'message': f'Pet {pet_name} e todos os registros relacionados foram deletados com sucesso'
         }), 200
         
     except Exception as e:
         db.rollback()
-        print(f"[ERRO] Erro ao deletar pet: {e}")
+        print(f"[ERRO] Erro ao deletar pet: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             'success': False,
-            'message': 'Erro ao deletar pet'
+            'message': f'Erro ao deletar pet: {str(e)}'
         }), 500
     finally:
         db.close()
