@@ -49,9 +49,77 @@ PetCloud/
 └── video/
 
 
+## 🔧 Configuração e Instalação
+
+### Pré-requisitos
+- Python 3.8 ou superior
+- pip (gerenciador de pacotes Python)
+- Navegador moderno (Chrome, Firefox, Edge)
+
+### Passo a Passo
+
+1. **Clone o repositório**
+   ```bash
+   git clone https://github.com/MarinaPrivado/PetCloud-project.git
+   cd PetCloud-project
+   ```
+
+2. **Instale as dependências Python**
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+
+3. **Configure as variáveis de ambiente**
+   
+   Crie um arquivo `.env` na pasta `backend/` com o seguinte conteúdo:
+   ```env
+   # OpenAI GPT API
+   OPENAI_API_KEY=sua_chave_openai_aqui
+   
+   # Flask Secret Key
+   SECRET_KEY=sua_chave_secreta_aqui
+   
+   # Google Cloud (para envio de emails)
+   GOOGLE_CLIENT_ID=seu_client_id_aqui
+   GOOGLE_CLIENT_SECRET=seu_client_secret_aqui
+   GOOGLE_REFRESH_TOKEN=seu_refresh_token_aqui
+   ```
+   
+   **Como obter as chaves:**
+   - **OpenAI API**: Acesse [platform.openai.com](https://platform.openai.com/api-keys)
+   - **Google Cloud**: Configure OAuth 2.0 no [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   - **Secret Key**: Gere com `python -c "import secrets; print(secrets.token_hex(32))"`
+
+4. **Configure o banco de dados**
+   ```bash
+   python setup_database.py
+   ```
+   
+   Este script irá:
+   - Criar todas as tabelas necessárias
+   - Popular com dados iniciais de exemplo
+   - Criar 2 usuários de teste (credenciais exibidas ao final)
+
+5. **Inicie o servidor**
+   ```bash
+   cd src
+   python app.py
+   ```
+   
+   O servidor iniciará em `http://127.0.0.1:5000`
+
+6. **Acesse a aplicação**
+   
+   Abra no navegador: `http://127.0.0.1:5000/pages/index.html`
+   
+   **Credenciais padrão:**
+   - Email: `italoreis99@gmail.com` | Senha: `senha123`
+   - Email: `luandapc3@gmail.com` | Senha: `senha123`
+
+---
+
 ### 🚀 Próximos Passos (Fora do escopo MVP)
-- Backend/Banco de dados
-- Integração com servidor
 - Sistema de notificações real-time
 - Inclusão de outras páginas(Adicionar novo pet; registro de gastos;historico completo)
 
