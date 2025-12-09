@@ -559,10 +559,18 @@
                     const url = `http://127.0.0.1:5000/api/dashboard/vacinas-vencidas?user_email=${encodeURIComponent(userEmail)}`;
                     console.log('[DEBUG] Chamando URL:', url);
                     const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        console.error('[DEBUG] Erro na resposta:', response.status, response.statusText);
+                        return;
+                    }
+                    
                     const data = await response.json();
                     console.log('[DEBUG] Resposta vacinas-vencidas:', data);
+                    console.log('[DEBUG] Total de vacinas vencidas:', data.vacinas_vencidas ? data.vacinas_vencidas.length : 0);
                     
-                    if (data.success && data.vacinas_vencidas.length > 0) {
+                    if (data.success && data.vacinas_vencidas && data.vacinas_vencidas.length > 0) {
+                        console.log('[DEBUG] Adicionando', data.vacinas_vencidas.length, 'alertas de vacinas vencidas...');
                         // Adicionar alertas de vacinas vencidas
                         data.vacinas_vencidas.forEach(vacina => {
                             const li = document.createElement('li');
@@ -584,10 +592,13 @@
                             `;
                             
                             alertasList.appendChild(li);
+                            console.log('[DEBUG] Alerta adicionado para:', vacina.pet_name);
                         });
+                    } else {
+                        console.log('[DEBUG] Nenhuma vacina vencida encontrada');
                     }
                 } catch (error) {
-                    console.error('Erro ao carregar alertas de vacinas:', error);
+                    console.error('[DEBUG] Erro ao carregar alertas de vacinas:', error);
                 }
             }
             
@@ -603,10 +614,18 @@
                     const url = `http://127.0.0.1:5000/api/dashboard/proximos-agendamentos?user_email=${encodeURIComponent(userEmail)}`;
                     console.log('[DEBUG] Chamando URL:', url);
                     const response = await fetch(url);
+                    
+                    if (!response.ok) {
+                        console.error('[DEBUG] Erro na resposta:', response.status, response.statusText);
+                        return;
+                    }
+                    
                     const data = await response.json();
                     console.log('[DEBUG] Resposta proximos-agendamentos:', data);
+                    console.log('[DEBUG] Total de agendamentos:', data.agendamentos ? data.agendamentos.length : 0);
                     
-                    if (data.success && data.agendamentos.length > 0) {
+                    if (data.success && data.agendamentos && data.agendamentos.length > 0) {
+                        console.log('[DEBUG] Adicionando', data.agendamentos.length, 'agendamentos...');
                         // Adicionar agendamentos futuros
                         data.agendamentos.forEach(agendamento => {
                             const li = document.createElement('li');
@@ -638,10 +657,13 @@
                             `;
                             
                             alertasList.appendChild(li);
+                            console.log('[DEBUG] Agendamento adicionado para:', agendamento.pet_name);
                         });
+                    } else {
+                        console.log('[DEBUG] Nenhum agendamento futuro encontrado');
                     }
                 } catch (error) {
-                    console.error('Erro ao carregar próximos agendamentos:', error);
+                    console.error('[DEBUG] Erro ao carregar próximos agendamentos:', error);
                 }
             }
         </script>

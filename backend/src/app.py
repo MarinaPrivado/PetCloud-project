@@ -78,6 +78,7 @@ def cadastrar_pet():
         birth_date = request.form.get('birth_date')
         pet_type = request.form.get('especie')
         descricao = request.form.get('descricao')
+        user_email = request.form.get('user_email')  # Email do usuário logado
         
         # Processar tags de comportamento
         behavior_tags_str = request.form.get('behavior_tags', '[]')
@@ -110,6 +111,7 @@ def cadastrar_pet():
         birth_date = data.get('birth_date')
         pet_type = data.get('especie')
         descricao = data.get('descricao')
+        user_email = data.get('user_email')  # Email do usuário logado
         behavior_tags = data.get('behavior_tags', [])
         photo_url = None
 
@@ -131,7 +133,27 @@ def cadastrar_pet():
         }), 400
 
     db = SessionLocal()
-    pet = Pet(name=name, breed=breed, birth_date=birth_date_dt, type=pet_type, photo_url=photo_url)
+    
+    # Buscar owner_id pelo email do usuário
+    owner_id = None
+    if user_email:
+        user = db.query(User).filter(User.email == user_email).first()
+        if user:
+            owner_id = user.id
+            print(f"[CADASTRO] Usuário encontrado: {user.name} (ID: {owner_id})")
+        else:
+            print(f"[CADASTRO] Usuário com email {user_email} não encontrado")
+    else:
+        print(f"[CADASTRO] Nenhum email de usuário fornecido")
+    
+    pet = Pet(
+        name=name, 
+        breed=breed, 
+        birth_date=birth_date_dt, 
+        type=pet_type, 
+        photo_url=photo_url,
+        owner_id=owner_id  # Associar ao dono
+    )
     
     # Adicionar tags de comportamento
     if behavior_tags:
@@ -140,7 +162,7 @@ def cadastrar_pet():
     db.add(pet)
     db.commit()
     db.refresh(pet)
-    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}, foto={pet.photo_url}, tags={behavior_tags}")
+    print(f"[CADASTRO] Pet cadastrado: id={pet.id}, nome={pet.name}, tipo={pet.type}, raca={pet.breed}, nascimento={pet.birth_date}, foto={pet.photo_url}, tags={behavior_tags}, owner_id={pet.owner_id}")
     db.close()
     return jsonify({
         'success': True,
@@ -324,14 +346,15 @@ def vacinas_vencidas_detalhes():
             ).order_by(Servico.data_agendada.desc()).all()
             
             if not vacinacoes_pet:
-                # Pet sem nenhuma vacinação agendada
+                # Pet sem nenhuma vacinação agendada - considera como muito atrasado
                 vacinas_vencidas_lista.append({
                     'pet_id': pet.id,
                     'pet_name': pet.name,
                     'status': 'sem_vacinacao',
                     'mensagem': 'Nenhuma vacinação cadastrada',
-                    'dias_vencida': None
+                    'dias_apos_vencimento': 999  # Valor alto para indicar que nunca foi vacinado
                 })
+                print(f"[VACINAS VENCIDAS] Pet {pet.name} sem vacinação - adicionado à lista")
             else:
                 # Verificar a última vacinação
                 ultima_vacinacao = vacinacoes_pet[0]
@@ -350,8 +373,15 @@ def vacinas_vencidas_detalhes():
                         'dias_apos_vencimento': dias_apos_vencimento,
                         'mensagem': f'Vencida há {dias_apos_vencimento} dias'
                     })
+                    print(f"[VACINAS VENCIDAS] Pet {pet.name} com vacinação vencida há {dias_apos_vencimento} dias - adicionado à lista")
+                else:
+                    print(f"[VACINAS VENCIDAS] Pet {pet.name} com vacinação em dia - NÃO adicionado")
         
         print(f"[VACINAS VENCIDAS] Total: {len(vacinas_vencidas_lista)}")
+        if len(vacinas_vencidas_lista) > 0:
+            print(f"[VACINAS VENCIDAS] Pets encontrados:")
+            for v in vacinas_vencidas_lista:
+                print(f"  - {v['pet_name']} ({v['status']})")
         
         return jsonify({
             'success': True,

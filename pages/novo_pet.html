@@ -442,6 +442,16 @@
             formData.append('birth_date', document.getElementById('data_nascimento').value);
             formData.append('descricao', document.getElementById('descricao').value);
             
+            // Adicionar email do usuário logado
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const userEmail = userData.email || '';
+            if (userEmail) {
+                formData.append('user_email', userEmail);
+                console.log('[FRONTEND] Email do usuário:', userEmail);
+            } else {
+                console.warn('[FRONTEND] Usuário não está logado!');
+            }
+            
             // Adicionar tags de comportamento
             const tagsValue = document.getElementById('behavior_tags').value || '[]';
             console.log('[FRONTEND] Tags selecionadas:', tagsValue);
