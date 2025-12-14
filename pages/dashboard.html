@@ -488,7 +488,11 @@
             // Carregar estatísticas do dashboard
             async function carregarEstatisticas() {
                 try {
-                    const response = await fetch('http://127.0.0.1:5000/api/dashboard/stats');
+                    // Obter email do usuário logado
+                    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                    const userEmail = userData.email;
+                    
+                    const response = await fetch(`http://127.0.0.1:5000/api/dashboard/stats?user_email=${encodeURIComponent(userEmail)}`);
                     const data = await response.json();
                     
                     if (data.success) {
@@ -640,7 +644,13 @@
                             });
                             
                             let mensagemDias = '';
-                            if (agendamento.dias_ate === 0) {
+                            let isAtrasado = agendamento.atrasado || agendamento.dias_ate < 0;
+                            
+                            if (isAtrasado) {
+                                const diasAtraso = Math.abs(agendamento.dias_ate);
+                                mensagemDias = `ATRASADO há ${diasAtraso} ${diasAtraso === 1 ? 'dia' : 'dias'}!`;
+                                li.classList.add('danger'); // Adiciona classe de alerta vermelho
+                            } else if (agendamento.dias_ate === 0) {
                                 mensagemDias = 'Hoje!';
                             } else if (agendamento.dias_ate === 1) {
                                 mensagemDias = 'Amanhã';
@@ -651,8 +661,8 @@
                             li.innerHTML = `
                                 <i class="fas ${agendamento.icone}"></i> 
                                 <div>
-                                    <strong>${agendamento.tipo_label} Agendado (${agendamento.pet_name})</strong>
-                                    <p style="font-size: 14px; color: #777;">${mensagemDias} - ${dataFormatada}</p>
+                                    <strong>${agendamento.tipo_label} ${isAtrasado ? 'ATRASADO' : 'Agendado'} (${agendamento.pet_name})</strong>
+                                    <p style="font-size: 14px; color: ${isAtrasado ? '#ff4444' : '#777'};">${mensagemDias} - ${dataFormatada}</p>
                                 </div>
                             `;
                             
@@ -823,6 +833,10 @@
                 return;
             }
 
+            // Obter email do usuário logado
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const userEmail = userData.email;
+
             try {
                 const response = await fetch('http://localhost:5000/api/pets', {
                     method: 'POST',
@@ -833,7 +847,8 @@
                         nome: nome,
                         especie: especie,
                         raca: raca,
-                        birth_date: birth_date
+                        birth_date: birth_date,
+                        user_email: userEmail
                     })
                 });
 
@@ -883,12 +898,6 @@
             // Adicionar mensagem do usuário
             adicionarMensagemChat(mensagem, 'user');
             
-            // Adicionar ao histórico
-            historicoChat.push({
-                role: 'user',
-                content: mensagem
-            });
-            
             // Limpar input
             input.value = '';
             
@@ -900,7 +909,7 @@
                 const userData = JSON.parse(localStorage.getItem('user') || '{}');
                 const userEmail = userData.email;
                 
-                // Chamar API do chatbot com histórico
+                // Chamar API do chatbot com histórico completo ANTES de adicionar a nova mensagem
                 const response = await fetch('http://127.0.0.1:5000/api/chatbot/agendar', {
                     method: 'POST',
                     headers: {
@@ -908,7 +917,7 @@
                     },
                     body: JSON.stringify({ 
                         mensagem: mensagem,
-                        historico: historicoChat.slice(0, -1), // Envia histórico sem a mensagem atual
+                        historico: historicoChat, // Envia histórico completo das mensagens anteriores
                         user_email: userEmail // Enviar email do usuário
                     })
                 });
@@ -921,6 +930,12 @@
                 if (loadingMsg) {
                     loadingMsg.remove();
                 }
+                
+                // Adicionar mensagem do usuário ao histórico AGORA (após receber resposta)
+                historicoChat.push({
+                    role: 'user',
+                    content: mensagem
+                });
                 
                 // Adicionar resposta do bot
                 adicionarMensagemChat(data.message, 'bot');

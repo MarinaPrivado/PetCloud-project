@@ -182,7 +182,27 @@ def cadastrar_pet():
 def listar_pets():
     db = SessionLocal()
     try:
-        pets = db.query(Pet).all()
+        # Obter email do usuário dos parâmetros da query
+        user_email = request.args.get('user_email')
+        
+        if user_email:
+            # Buscar o usuário pelo email
+            user = db.query(User).filter(User.email == user_email).first()
+            if not user:
+                print(f"[LISTAGEM] Usuário com email {user_email} não encontrado")
+                return jsonify({
+                    'success': False,
+                    'message': 'Usuário não encontrado'
+                }), 404
+            
+            # Filtrar pets pelo owner_id do usuário
+            pets = db.query(Pet).filter(Pet.owner_id == user.id).all()
+            print(f"[LISTAGEM] Retornando {len(pets)} pets do usuário {user.name} (ID: {user.id})")
+        else:
+            # Se não passar email, retorna todos os pets (modo legado)
+            pets = db.query(Pet).all()
+            print(f"[LISTAGEM] Nenhum user_email fornecido. Retornando todos os {len(pets)} pets")
+        
         pets_list = []
         for pet in pets:
             pets_list.append({
@@ -194,7 +214,7 @@ def listar_pets():
                 'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None,
                 'owner_id': pet.owner_id if hasattr(pet, 'owner_id') else None
             })
-        print(f"[LISTAGEM] Retornando {len(pets_list)} pets")
+        
         return jsonify({
             'success': True,
             'pets': pets_list
@@ -249,16 +269,37 @@ def listar_usuarios():
 def dashboard_stats():
     db = SessionLocal()
     try:
-        # Total de pets registrados
-        total_pets = db.query(Pet).count()
+        # Obter email do usuário dos parâmetros da query
+        user_email = request.args.get('user_email')
+        
+        if not user_email:
+            return jsonify({
+                'success': False,
+                'message': 'Email do usuário não fornecido'
+            }), 400
+        
+        # Buscar o usuário pelo email
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return jsonify({
+                'success': False,
+                'message': 'Usuário não encontrado'
+            }), 404
+        
+        # Total de pets registrados DO USUÁRIO
+        total_pets = db.query(Pet).filter(Pet.owner_id == user.id).count()
         
         # Calcular gastos do mês atual (dezembro/2025)
         hoje = datetime.now()
         primeiro_dia_mes_atual = hoje.replace(day=1)
         ultimo_dia_mes_atual = (primeiro_dia_mes_atual.replace(month=primeiro_dia_mes_atual.month % 12 + 1, day=1) - timedelta(days=1)) if primeiro_dia_mes_atual.month < 12 else primeiro_dia_mes_atual.replace(day=31)
         
-        # Buscar serviços do mês atual (1 a 31 de dezembro) com preço
+        # Buscar IDs dos pets do usuário
+        pet_ids = [pet.id for pet in db.query(Pet).filter(Pet.owner_id == user.id).all()]
+        
+        # Buscar serviços do mês atual (1 a 31 de dezembro) com preço DOS PETS DO USUÁRIO
         servicos_mes = db.query(Servico).filter(
+            Servico.pet_id.in_(pet_ids),
             Servico.data_agendada >= primeiro_dia_mes_atual,
             Servico.data_agendada <= ultimo_dia_mes_atual,
             Servico.preco.isnot(None)
@@ -270,8 +311,8 @@ def dashboard_stats():
         vacinas_vencidas = 0
         data_limite = hoje - timedelta(days=365)  # 1 ano atrás
         
-        # Buscar todos os pets
-        todos_pets = db.query(Pet).all()
+        # Buscar todos os pets DO USUÁRIO
+        todos_pets = db.query(Pet).filter(Pet.owner_id == user.id).all()
         
         for pet in todos_pets:
             # Buscar todas as vacinações do pet (serviços do tipo 'vacinacao')
@@ -296,6 +337,7 @@ def dashboard_stats():
                     dias_desde = (hoje.date() - ultima_vacinacao.data_agendada).days
                     print(f"[DASHBOARD] Pet {pet.name} (ID: {pet.id}) - última vacinação há {dias_desde} dias - OK")
         
+        print(f"[DASHBOARD] Usuário: {user.name} (ID: {user.id})")
         print(f"[DASHBOARD] Total de pets: {total_pets}")
         print(f"[DASHBOARD] Gastos do mês: R$ {total_gastos:.2f} ({len(servicos_mes)} serviços)")
         print(f"[DASHBOARD] Vacinas vencidas: {vacinas_vencidas}")
@@ -409,24 +451,25 @@ def proximos_agendamentos():
         user_email = request.args.get('user_email', '')
         
         hoje = datetime.now().date()
-        # Buscar agendamentos futuros (próximos 30 dias)
-        data_limite = hoje + timedelta(days=30)
+        # Buscar agendamentos futuros (próximo ano) e recentes atrasados (últimos 7 dias)
+        data_limite_futura = hoje + timedelta(days=365)
+        data_limite_passada = hoje - timedelta(days=7)
         
         # Buscar usuário pelo email
         user = db.query(User).filter(User.email == user_email).first() if user_email else None
         
         # Filtrar agendamentos por usuário
         if user:
-            # Buscar agendamentos apenas dos pets do usuário
+            # Buscar agendamentos dos pets do usuário (incluindo atrasados recentes)
             agendamentos = db.query(Servico).join(Pet).filter(
                 Pet.owner_id == user.id,
-                Servico.data_agendada >= hoje,
-                Servico.data_agendada <= data_limite
+                Servico.data_agendada >= data_limite_passada,
+                Servico.data_agendada <= data_limite_futura
             ).order_by(Servico.data_agendada.asc()).all()
         else:
             agendamentos = db.query(Servico).filter(
-                Servico.data_agendada >= hoje,
-                Servico.data_agendada <= data_limite
+                Servico.data_agendada >= data_limite_passada,
+                Servico.data_agendada <= data_limite_futura
             ).order_by(Servico.data_agendada.asc()).all()
         
         agendamentos_lista = []
@@ -436,6 +479,7 @@ def proximos_agendamentos():
             
             if pet:
                 dias_ate_agendamento = (servico.data_agendada - hoje).days
+                atrasado = dias_ate_agendamento < 0
                 
                 # Definir ícone e tipo baseado no serviço
                 if servico.tipo == 'vacinacao':
@@ -458,6 +502,7 @@ def proximos_agendamentos():
                     'tipo_label': tipo_label,
                     'data_agendada': servico.data_agendada.isoformat(),
                     'dias_ate': dias_ate_agendamento,
+                    'atrasado': atrasado,
                     'clinica': servico.clinica,
                     'veterinario': servico.veterinario,
                     'icone': icone
@@ -531,6 +576,31 @@ def chatbot_agendar():
         # Criar mapeamento nome -> pet para validação posterior (apenas pets deste usuário)
         pets_map = {pet.name.lower(): pet for pet in pets}
         
+        # Buscar serviços agendados futuros do usuário
+        pet_ids = [pet.id for pet in pets]
+        hoje = datetime.now().date()
+        servicos_futuros = db.query(Servico).filter(
+            Servico.pet_id.in_(pet_ids),
+            Servico.data_agendada >= hoje
+        ).order_by(Servico.data_agendada.asc()).all()
+        
+        servicos_context = []
+        servicos_map = {}  # Mapeamento para encontrar serviço por ID
+        for servico in servicos_futuros:
+            pet = next((p for p in pets if p.id == servico.pet_id), None)
+            if pet:
+                servico_info = {
+                    "id": servico.id,
+                    "pet_nome": pet.name,
+                    "tipo": servico.tipo,
+                    "data": servico.data_agendada.strftime('%Y-%m-%d'),
+                    "clinica": servico.clinica_rel.nome if servico.clinica_rel else servico.clinica
+                }
+                servicos_context.append(servico_info)
+                servicos_map[servico.id] = servico
+        
+        print(f"[CHATBOT] Serviços futuros do usuário: {len(servicos_context)}")
+        
         # Buscar clínicas disponíveis (agrupadas por tipo de serviço)
         clinicas = db.query(Clinica).all()
         clinicas_por_servico = {}
@@ -553,12 +623,29 @@ Pets disponíveis: {json.dumps(pets_context, ensure_ascii=False)}
 
 Clínicas disponíveis por tipo de serviço: {json.dumps(clinicas_por_servico, ensure_ascii=False)}
 
-IMPORTANTE: Você tem acesso ao HISTÓRICO COMPLETO da conversa. Use as mensagens anteriores para manter o contexto.
-- Se o usuário já informou o pet, tipo ou data anteriormente, NÃO peça novamente
-- SEMPRE analise TODO o histórico antes de perguntar algo
-- Se todas as informações já foram fornecidas no histórico, prossiga com o agendamento
+Serviços agendados (futuros): {json.dumps(servicos_context, ensure_ascii=False)}
+
+⚠️ REGRA CRÍTICA DE MEMÓRIA ⚠️
+ANTES DE FAZER QUALQUER PERGUNTA, você DEVE:
+1. LER TODAS as mensagens anteriores do histórico da conversa
+2. IDENTIFICAR se o usuário já mencionou: pet, tipo de serviço, data ou clínica
+3. EXTRAIR essas informações das mensagens anteriores
+4. NUNCA perguntar algo que já foi mencionado no histórico
+
+EXEMPLOS DE COMO USAR O HISTÓRICO:
+- Se o usuário disse "Agendar banho para Mia na próxima sexta" → você JÁ TEM: pet=Mia, tipo=banho, data=próxima sexta
+- Se depois ele disser apenas "Sim, confirmar" → você DEVE LEMBRAR dos dados anteriores
+- Se ele disse "próxima sexta feira" → NÃO pergunte "Qual dia da próxima semana?"
 
 Sua função é extrair informações de agendamentos das mensagens dos usuários e retornar um JSON válido.
+
+🔄 FUNCIONALIDADE DE REMARCAÇÃO:
+Você também pode REMARCAR serviços existentes. Quando o usuário mencionar "remarcar", "mudar data", "alterar agendamento":
+
+1. Liste os serviços agendados disponíveis (fornecidos acima)
+2. Pergunte qual serviço deseja remarcar (exemplo: "Qual agendamento você gostaria de remarcar?\n1. Banho para Mia em 20/12/2025 na PetShop Amigo\n2. Consulta para Thor em 22/12/2025 na Clínica VetCare")
+3. Após usuário escolher, pergunte a nova data
+4. Retorne JSON com acao: "remarcar", servico_id, nova_data
 
 REGRAS CRÍTICAS DE VALIDAÇÃO:
 1. NOME DO PET é OBRIGATÓRIO - Se não foi mencionado NO HISTÓRICO COMPLETO, retorne sucesso: false
@@ -566,25 +653,34 @@ REGRAS CRÍTICAS DE VALIDAÇÃO:
 3. TIPO DE AGENDAMENTO é OBRIGATÓRIO - Se não foi mencionado NO HISTÓRICO COMPLETO, retorne sucesso: false
 4. CLÍNICA é OBRIGATÓRIA - O usuário DEVE escolher uma clínica da lista disponível
 
-FLUXO DE VALIDAÇÃO:
-ANTES DE PERGUNTAR QUALQUER COISA, analise TODO o histórico da conversa para ver se a informação já foi fornecida.
+FLUXO DE VALIDAÇÃO (EXECUTE NESTA ORDEM):
 
-1º. Verificar histórico completo - extrair pet, tipo, data e clínica mencionados ANTES
-2º. Se mencionar "próxima semana" SEM dia específico → Pergunte: "Qual dia da próxima semana?"
-3º. Se não encontrou nome do pet no histórico → Pergunte: "Para qual pet?" (liste os pets disponíveis)
-4º. Se não encontrou tipo no histórico → Pergunte: "Qual tipo de serviço?" (vacinação, banho ou consulta)
-5º. Se não encontrou data no histórico → Pergunte: "Para qual data?"
-6º. Se tem pet+tipo+data mas não tem clínica → Mostre as clínicas disponíveis:
-    - Liste TODAS as clínicas do tipo específico com nome, preço e veterinário
-    - Formate: "Clínicas disponíveis para [tipo]:\n1. [Nome] - R$ [preço] (Dr. [veterinario])\n2. ..."
-    - Peça: "Qual clínica você prefere?"
-7º. Se tem pet+tipo+data+clínica → sucesso: true e crie o agendamento
+🔍 PASSO 1 - ANÁLISE DO HISTÓRICO (OBRIGATÓRIO):
+Leia TODAS as mensagens anteriores e extraia:
+- Nome do pet mencionado (ex: "Mia", "Thor", etc.)
+- Tipo de serviço mencionado (ex: "banho", "vacina", "consulta")
+- Data mencionada (ex: "sexta", "próxima sexta-feira", "amanhã", "15/12")
+- Clínica mencionada (se houver)
 
-EXTRAÇÃO DE INFORMAÇÕES DO HISTÓRICO:
-- Procure menções de nomes de pets (Moana, Teste, Hulk) em QUALQUER mensagem anterior
-- Procure tipos de serviço (consulta, vacinação, banho) em QUALQUER mensagem anterior
-- Procure datas (amanhã, segunda, etc) em QUALQUER mensagem anterior
-- Procure nomes de clínicas mencionadas pelo usuário
+🎯 PASSO 2 - INTERPRETAÇÃO DE DATAS:
+- "próxima sexta" ou "sexta-feira" = calcule a próxima sexta-feira a partir de hoje
+- "amanhã" = adicione 1 dia
+- "depois de amanhã" = adicione 2 dias
+- "segunda da próxima semana" = próxima segunda-feira
+- APENAS "próxima semana" SEM dia específico = pergunte qual dia
+
+✅ PASSO 3 - VALIDAÇÃO:
+- Se tem pet+tipo+data do histórico mas não tem clínica → mostre clínicas
+- Se falta pet → pergunte qual pet
+- Se falta tipo → pergunte qual serviço
+- Se falta data → pergunte qual data
+- Se tem tudo → sucesso: true
+
+⚠️ EXEMPLO CRÍTICO:
+Histórico: ["Agende banho para Mia na próxima sexta"]
+Nova mensagem: "Confirmar"
+→ Você JÁ TEM: pet="Mia", tipo="banho", data="próxima sexta-feira"
+→ Se falta só clínica, mostre as opções de clínicas
 
 Tipos de serviço disponíveis:
 - vacinacao (vacinação, vacina)
@@ -609,8 +705,10 @@ Você DEVE responder APENAS E EXCLUSIVAMENTE com um objeto JSON puro, sem texto 
 NÃO inclua explicações, markdown (```json), ou qualquer texto adicional.
 APENAS o JSON puro conforme o formato abaixo:
 
+PARA NOVO AGENDAMENTO:
 {{
     "sucesso": true/false,
+    "acao": "agendar",
     "tipo": "vacinacao" | "banho" | "consulta" (ou null se não informado),
     "pet_nome": "nome do pet" (ou null se não informado),
     "data": "YYYY-MM-DD" (ou null se não informado),
@@ -619,43 +717,73 @@ APENAS o JSON puro conforme o formato abaixo:
     "mensagem_usuario": "mensagem amigável de confirmação ou pedido de esclarecimento"
 }}
 
-NOTA: Retorne apenas os NOMES, não os IDs. O sistema fará a conversão automaticamente.
+PARA REMARCAÇÃO:
+{{
+    "sucesso": true/false,
+    "acao": "remarcar",
+    "servico_id": 123 (ID do serviço a remarcar),
+    "nova_data": "YYYY-MM-DD",
+    "mensagem_usuario": "mensagem de confirmação da remarcação"
+}}
 
-IMPORTANTE sobre clínicas:
-- Quando o usuário mencionar o nome de uma clínica, encontre o ID correspondente nas clínicas disponíveis para o tipo de serviço
-- Se o usuário disser "primeira", "opção 1", use a primeira clínica da lista
-- Se disser "segunda", "opção 2", use a segunda clínica, e assim por diante
-- Inclua automaticamente o preço e veterinário da clínica escolhida
+NOTA: Retorne apenas os NOMES e IDs corretos. O sistema fará a conversão automaticamente.
 
-Exemplos de validação:
+🏥 COMO LISTAR CLÍNICAS (INSTRUÇÕES CRÍTICAS):
+Quando tem pet+tipo+data mas NÃO tem clínica, você DEVE:
+
+1. ACESSAR o objeto "Clínicas disponíveis por tipo de serviço" fornecido no início deste prompt
+2. BUSCAR a chave correspondente ao tipo: "banho", "vacinacao" ou "consulta"
+3. LISTAR TODAS as clínicas daquele tipo no formato:
+
+"Clínicas disponíveis para [tipo]:\n1. [nome] - R$ [preco] (Dr./Dra. [veterinario])\n2. [nome2] - R$ [preco2] (Dr./Dra. [veterinario2])\n...\n\nQual clínica você prefere? (Responda com o número ou nome)"
+
+EXEMPLO REAL:
+Se tipo = "banho" e as clínicas de banho são:
+[{{"nome": "PetShop Amigo", "preco": 50.0, "veterinario": "Dra. Silva"}}]
+
+Você deve retornar na mensagem_usuario:
+"Clínicas disponíveis para banho:\n1. PetShop Amigo - R$ 50.00 (Dra. Silva)\n\nQual clínica você prefere?"
+
+🎯 QUANDO O USUÁRIO ESCOLHE A CLÍNICA:
+- Se disser "primeira", "1", "opção 1" → use o nome da primeira clínica da lista
+- Se disser "segunda", "2", "opção 2" → use o nome da segunda clínica
+- Se disser o nome da clínica → use esse nome exato
+- Preencha "clinica_nome" com o nome EXATO da clínica (não o número)
+
+Exemplos de validação (AGENDAMENTO):
 - "Agendar vacina" → sucesso: false, mensagem: "Para qual pet você gostaria de agendar a vacinação? Pets disponíveis: [lista]"
 - "Vacina para Thor" → sucesso: false, mensagem: "Para qual data você gostaria de agendar?"
 - "Vacina para Thor amanhã" → sucesso: false, mensagem: "Clínicas disponíveis para vacinação:\n1. [Nome] - R$ [preço] (Dr. [vet])\n2. [Nome2] - R$ [preço2]\nQual clínica você prefere?"
-- "Primeira" (após mostrar clínicas) → sucesso: true, seleciona primeira clínica com preço e veterinário
-- "Vacina para Thor" → sucesso: false, mensagem: "Para qual data você gostaria de agendar a vacinação do Thor?"
-- "Agendar para Thor amanhã" → sucesso: false, mensagem: "Qual tipo de serviço você deseja agendar? (vacinação, banho ou consulta)"
-- "Agendar vacina próxima semana" → sucesso: false, mensagem: "Qual dia da próxima semana? (segunda, terça, quarta, quinta, sexta)"
-- "Vacina para Thor amanhã" → sucesso: false, mensagem: "Clínicas disponíveis para vacinação:\n1. [Nome] - R$ [preço]\nQual clínica você prefere?"
-- "Primeira clínica" → sucesso: true (seleciona clínica 1 com preço correto)
+- "Primeira clínica" → sucesso: true, acao: "agendar" (seleciona clínica 1 com preço correto)
+
+Exemplos de validação (REMARCAÇÃO):
+- "Quero remarcar um agendamento" → sucesso: false, mensagem: "Qual agendamento você gostaria de remarcar?\n1. Banho para Mia em 20/12/2025\n2. Consulta para Thor em 22/12/2025"
+- "O primeiro" (após listar) → sucesso: false, mensagem: "Para qual nova data você gostaria de remarcar?"
+- "Para amanhã" (após escolher serviço) → sucesso: true, acao: "remarcar", servico_id: 1, nova_data: "2025-12-15"
+- "Remarcar o banho da Mia para próxima segunda" → sucesso: false, liste os serviços de banho da Mia, confirme qual, depois pergunte nova data
 
 Data de hoje: {datetime.now().strftime('%Y-%m-%d')}"""
 
         # Chamada para OpenAI
         print(f"[CHATBOT] Processando mensagem: {mensagem}")
         print(f"[CHATBOT] Histórico: {len(historico)} mensagens anteriores")
+        print(f"[CHATBOT] Clínicas disponíveis: {json.dumps(clinicas_por_servico, ensure_ascii=False, indent=2)}")
         
         # Construir mensagens com histórico
         messages = [{"role": "system", "content": system_prompt}]
         
         # Adicionar histórico de conversas (últimas 10 mensagens)
-        for msg in historico[-10:]:
+        for i, msg in enumerate(historico[-10:]):
+            msg_content = msg.get("content", "")
             messages.append({
                 "role": msg.get("role", "user"),
-                "content": msg.get("content", "")
+                "content": msg_content
             })
+            print(f"[CHATBOT] Histórico [{i}] {msg.get('role', 'user')}: {msg_content}")
         
         # Adicionar mensagem atual
         messages.append({"role": "user", "content": mensagem})
+        print(f"[CHATBOT] Mensagem atual: {mensagem}")
         
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -694,6 +822,59 @@ Data de hoje: {datetime.now().strftime('%Y-%m-%d')}"""
                 'message': resposta_json.get('mensagem_usuario', 'Não entendi sua solicitação. Pode reformular?')
             }), 200
         
+        # Verificar qual ação foi solicitada
+        acao = resposta_json.get('acao', 'agendar')
+        
+        # ============ REMARCAÇÃO ============
+        if acao == 'remarcar':
+            servico_id = resposta_json.get('servico_id')
+            nova_data_str = resposta_json.get('nova_data')
+            
+            if not servico_id or not nova_data_str:
+                return jsonify({
+                    'success': False,
+                    'message': 'Informações incompletas para remarcação.'
+                }), 200
+            
+            # Buscar serviço
+            servico = servicos_map.get(servico_id)
+            if not servico:
+                return jsonify({
+                    'success': False,
+                    'message': 'Serviço não encontrado ou não pertence a você.'
+                }), 200
+            
+            # Armazenar data antiga antes de substituir
+            data_antiga = servico.data_agendada
+            
+            # Atualizar data (substitui a data antiga pela nova)
+            try:
+                nova_data = datetime.strptime(nova_data_str, '%Y-%m-%d').date()
+                servico.data_agendada = nova_data
+                db.commit()
+                
+                print(f"[CHATBOT] Serviço {servico_id} remarcado: {data_antiga} → {nova_data} (data antiga excluída/substituída)")
+                
+                data_formatada = nova_data.strftime('%d/%m/%Y')
+                pet = db.query(Pet).filter(Pet.id == servico.pet_id).first()
+                tipo_texto = {
+                    'vacinacao': 'vacinação',
+                    'banho': 'banho',
+                    'consulta': 'consulta'
+                }.get(servico.tipo, 'serviço')
+                
+                return jsonify({
+                    'success': True,
+                    'message': f"✅ Remarcação confirmada! {tipo_texto.capitalize()} de {pet.name} remarcado para {data_formatada}."
+                }), 200
+                
+            except ValueError:
+                return jsonify({
+                    'success': False,
+                    'message': 'Formato de data inválido.'
+                }), 200
+        
+        # ============ NOVO AGENDAMENTO ============
         # Validar e buscar pet pelo nome
         pet_nome = resposta_json.get('pet_nome', '').strip()
         pet = pets_map.get(pet_nome.lower())
@@ -1452,9 +1633,137 @@ def create_servico():
     except ValueError as e:
         return jsonify({'success': False, 'message': 'Formato de data inválido. Use YYYY-MM-DD.'}), 400
     except Exception as e:
-        db.rollback()
         print(f'[ERRO] Erro ao criar serviço: {e}')
-        return jsonify({'success': False, 'message': 'Erro ao agendar serviço.'}), 500
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/servicos/<int:servico_id>', methods=['DELETE'])
+def deletar_servico(servico_id):
+    """Deleta um serviço agendado"""
+    db = SessionLocal()
+    try:
+        servico = db.query(Servico).filter(Servico.id == servico_id).first()
+        
+        if not servico:
+            return jsonify({'success': False, 'message': 'Serviço não encontrado.'}), 404
+        
+        # Armazenar informações para log
+        tipo_servico = servico.tipo
+        pet_id = servico.pet_id
+        
+        db.delete(servico)
+        db.commit()
+        
+        print(f'[SERVICO] Agendamento deletado: ID={servico_id}, tipo={tipo_servico}, pet_id={pet_id}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Serviço deletado com sucesso!'
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao deletar serviço: {e}')
+        return jsonify({'success': False, 'message': 'Erro ao deletar serviço.'}), 500
+    finally:
+        db.close()
+
+@app.route('/api/servicos', methods=['GET'])
+def listar_servicos():
+    """Lista todos os serviços agendados de um usuário (futuros e passados)"""
+    db = SessionLocal()
+    try:
+        user_email = request.args.get('user_email')
+        incluir_passados = request.args.get('incluir_passados', 'false').lower() == 'true'
+        
+        if not user_email:
+            return jsonify({'success': False, 'message': 'Email do usuário é obrigatório.'}), 400
+        
+        # Buscar usuário
+        user = db.query(User).filter(User.email == user_email).first()
+        if not user:
+            return jsonify({'success': False, 'message': 'Usuário não encontrado.'}), 404
+        
+        # Buscar pets do usuário
+        pets = db.query(Pet).filter(Pet.owner_id == user.id).all()
+        pet_ids = [pet.id for pet in pets]
+        
+        # Buscar serviços dos pets
+        query = db.query(Servico).filter(Servico.pet_id.in_(pet_ids))
+        
+        # Filtrar apenas futuros se necessário
+        if not incluir_passados:
+            hoje = datetime.now().date()
+            query = query.filter(Servico.data_agendada >= hoje)
+        
+        servicos = query.order_by(Servico.data_agendada.asc()).all()
+        
+        # Montar resposta com informações do pet
+        servicos_lista = []
+        for servico in servicos:
+            pet = db.query(Pet).filter(Pet.id == servico.pet_id).first()
+            servico_dict = servico.to_dict()
+            servico_dict['pet_nome'] = pet.name if pet else 'Desconhecido'
+            servicos_lista.append(servico_dict)
+        
+        print(f'[SERVICOS] Listados {len(servicos_lista)} serviços para usuário {user.name}')
+        
+        return jsonify({
+            'success': True,
+            'servicos': servicos_lista
+        }), 200
+        
+    except Exception as e:
+        print(f'[ERRO] Erro ao listar serviços: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
+    finally:
+        db.close()
+
+@app.route('/api/servicos/<int:servico_id>', methods=['PUT'])
+def atualizar_servico(servico_id):
+    """Atualiza/remarca um serviço agendado"""
+    db = SessionLocal()
+    try:
+        data = request.json
+        
+        servico = db.query(Servico).filter(Servico.id == servico_id).first()
+        if not servico:
+            return jsonify({'success': False, 'message': 'Serviço não encontrado.'}), 404
+        
+        # Atualizar campos se fornecidos
+        if 'data_agendada' in data:
+            try:
+                nova_data = datetime.strptime(data['data_agendada'], '%Y-%m-%d').date()
+                servico.data_agendada = nova_data
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Formato de data inválido. Use YYYY-MM-DD.'}), 400
+        
+        if 'clinica_id' in data:
+            clinica = db.query(Clinica).filter(Clinica.id == data['clinica_id']).first()
+            if not clinica:
+                return jsonify({'success': False, 'message': 'Clínica não encontrada.'}), 404
+            servico.clinica_id = data['clinica_id']
+            servico.preco = clinica.preco_servico
+            servico.veterinario = clinica.veterinario
+        
+        if 'tipo' in data:
+            servico.tipo = data['tipo']
+        
+        db.commit()
+        db.refresh(servico)
+        
+        print(f'[SERVICO] Agendamento atualizado: ID={servico_id}, nova data={servico.data_agendada}')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Serviço atualizado com sucesso!',
+            'servico': servico.to_dict()
+        }), 200
+        
+    except Exception as e:
+        print(f'[ERRO] Erro ao atualizar serviço: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
     finally:
         db.close()
 

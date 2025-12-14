@@ -20,6 +20,14 @@ class Servico(Base):
     clinica_rel = relationship("Clinica", back_populates="servicos")
     
     def to_dict(self):
+        # Se tem clinica_id, buscar nome da clínica através do relacionamento
+        clinica_nome = None
+        if self.clinica_id and self.clinica_rel:
+            clinica_nome = self.clinica_rel.nome
+        # Se não tem clinica_id, usar o campo clinica antigo (para compatibilidade)
+        elif self.clinica:
+            clinica_nome = self.clinica
+            
         return {
             'id': self.id,
             'pet_id': self.pet_id,
@@ -27,6 +35,6 @@ class Servico(Base):
             'tipo': self.tipo,
             'data_agendada': self.data_agendada.isoformat() if self.data_agendada else None,
             'preco': self.preco,
-            'clinica': self.clinica,
+            'clinica': clinica_nome,  # Nome da clínica obtido através do relacionamento ou campo antigo
             'veterinario': self.veterinario
         }

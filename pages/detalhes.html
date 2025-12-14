@@ -326,6 +326,9 @@
             font-weight: 600;
             margin-bottom: 5px;
             color: #1a1a1a;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .timeline-item span {
@@ -333,6 +336,21 @@
             font-size: 12px;
             color: #999;
             margin-top: 5px;
+        }
+
+        .btn-delete-servico {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.3s;
+        }
+
+        .btn-delete-servico:hover {
+            background: #ff5252;
         }
         
         /* Simulação de Galeria/Fotos */
@@ -949,7 +967,12 @@
                 const timelineItem = document.createElement('div');
                 timelineItem.className = 'timeline-item';
                 timelineItem.innerHTML = `
-                    <h4>${icon} ${nome}</h4>
+                    <h4>
+                        <span>${icon} ${nome}</span>
+                        <button class="btn-delete-servico" onclick="deletarServico(${servico.id}, '${nome}')">
+                            <i class="fas fa-trash"></i> Deletar
+                        </button>
+                    </h4>
                     <p><strong>Clínica:</strong> ${servico.clinica || 'Não informada'}<br>
                     <strong>Veterinário:</strong> ${servico.veterinario || 'Não informado'}<br>
                     <strong>Preço:</strong> ${servico.preco ? 'R$ ' + servico.preco.toFixed(2) : 'Não informado'}</p>
@@ -958,6 +981,31 @@
                 
                 timelineContainer.appendChild(timelineItem);
             });
+        }
+        
+        async function deletarServico(servicoId, tipoServico) {
+            if (!confirm(`Tem certeza que deseja deletar este agendamento de ${tipoServico}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:5000/api/servicos/${servicoId}`, {
+                    method: 'DELETE'
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Serviço deletado com sucesso!');
+                    // Recarregar os dados do pet para atualizar a timeline
+                    carregarPet();
+                } else {
+                    alert(data.message || 'Erro ao deletar serviço.');
+                }
+            } catch (error) {
+                console.error('Erro ao deletar serviço:', error);
+                alert('Erro ao conectar com o servidor.');
+            }
         }
 
         // Controle do modal de edição

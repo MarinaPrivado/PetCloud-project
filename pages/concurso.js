@@ -162,7 +162,7 @@ async function carregarFotosConcurso() {
                     ${btnDeletar}
                     <div class="photo-placeholder" style="background-image: url('http://127.0.0.1:5000${foto.imagem_url}'); background-size: cover; background-position: center;"></div>
                     <div class="submission-details">
-                        <h4>${foto.pet_name}${foto.descricao ? ` (${foto.descricao})` : ''}</h4>
+                        <h4>${foto.descricao || 'Sem descrição'}</h4>
                         <p>Submetido por: ${foto.user_name}</p>
                         <a href="#" onclick="votarFoto(${foto.id}); return false;" class="btn-vote">
                             <i class="fas fa-heart"></i> Votar (${foto.votos})

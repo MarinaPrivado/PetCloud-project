@@ -141,9 +141,13 @@
             // Imagem genérica para pets sem foto
             const imagemGenerica = 'https://images.unsplash.com/photo-1444212477490-ca407925329e?w=1200';
 
+            // Obter email do usuário logado
+            const userData = JSON.parse(localStorage.getItem('user') || '{}');
+            const userEmail = userData.email;
+
             // Buscar pets do banco de dados
             try {
-                const response = await fetch('http://127.0.0.1:5000/api/pets');
+                const response = await fetch(`http://127.0.0.1:5000/api/pets?user_email=${encodeURIComponent(userEmail)}`);
                 const data = await response.json();
                 const pets = data.pets || [];
 
