@@ -1,6 +1,9 @@
-NOME DO SISTEMA: PetCloud - Sistema de Gestão e Comunidade para Pets
+PetCloud - Sistema de Gestão e Comunidade para Pets
 
-## Tela Principal do Sistema
+## Menu de Autenticação
+![Menu de Autenticação](imagens/Auth.png)
+
+## Home do Sistema
 
 ![Tela Principal do PetCloud](imagens/home.png)
 
