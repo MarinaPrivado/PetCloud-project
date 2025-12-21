@@ -98,17 +98,8 @@ PetCloud/
    - **Google Cloud**: Configure OAuth 2.0 no [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    - **Secret Key**: Gere com `python -c "import secrets; print(secrets.token_hex(32))"`
 
-4. **Configure o banco de dados**
-   ```bash
-   python setup_database.py
-   ```
-   
-   Este script irá:
-   - Criar todas as tabelas necessárias
-   - Popular com dados iniciais de exemplo
-   - Criar 2 usuários de teste (credenciais exibidas ao final)
 
-5. **Inicie o servidor**
+4. **Inicie o servidor**
    ```bash
    cd src
    python app.py
@@ -116,7 +107,7 @@ PetCloud/
    
    O servidor iniciará em `http://127.0.0.1:5000`
 
-6. **Acesse a aplicação**
+5. **Acesse a aplicação**
    
    Abra no navegador: `http://127.0.0.1:5000/pages/index.html`
    
