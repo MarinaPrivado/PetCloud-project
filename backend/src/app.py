@@ -897,6 +897,23 @@ Data de hoje: {datetime.now().strftime('%Y-%m-%d')}"""
         
         print(f"[CHATBOT] Clínica encontrada: {clinica.nome} (ID: {clinica.id})")
         
+        # Buscar e remover agendamentos atrasados do mesmo tipo para o mesmo pet
+        # Isso evita que alertas de consultas atrasadas fiquem duplicados
+        hoje = datetime.now().date()
+        tipo_servico = resposta_json.get('tipo')
+        
+        agendamentos_atrasados = db.query(Servico).filter(
+            Servico.pet_id == pet.id,
+            Servico.tipo == tipo_servico,
+            Servico.data_agendada < hoje
+        ).all()
+        
+        if agendamentos_atrasados:
+            print(f"[CHATBOT] Removendo {len(agendamentos_atrasados)} agendamento(s) atrasado(s) do tipo {tipo_servico} para {pet.name}")
+            for agendamento_antigo in agendamentos_atrasados:
+                print(f"[CHATBOT] - Removendo agendamento ID {agendamento_antigo.id} de {agendamento_antigo.data_agendada}")
+                db.delete(agendamento_antigo)
+        
         # Criar serviço no banco de dados
         novo_servico = Servico(
             tipo=resposta_json.get('tipo'),
@@ -1049,6 +1066,7 @@ def obter_pet(pet_id):
             'birth_date': pet.birth_date.strftime('%Y-%m-%d') if pet.birth_date else None,
             'photo_url': pet.photo_url if hasattr(pet, 'photo_url') else None,
             'owner_id': pet.owner_id if hasattr(pet, 'owner_id') else None,
+            'behavior_tags': pet.get_behavior_tags() if hasattr(pet, 'behavior_tags') else [],
             'health_records': pet.health_records if hasattr(pet, 'health_records') else None,
             'feeding_schedule': pet.feeding_schedule if hasattr(pet, 'feeding_schedule') else None,
             'servicos': [servico.to_dict() for servico in servicos]
@@ -1607,6 +1625,23 @@ def create_servico():
         if not pet:
             return jsonify({'success': False, 'message': 'Pet não encontrado.'}), 404
         
+        # Buscar e remover agendamentos atrasados do mesmo tipo para o mesmo pet
+        # Isso evita que alertas de consultas atrasadas fiquem duplicados
+        hoje = datetime.now().date()
+        tipo_servico = data['tipo']
+        
+        agendamentos_atrasados = db.query(Servico).filter(
+            Servico.pet_id == data['pet_id'],
+            Servico.tipo == tipo_servico,
+            Servico.data_agendada < hoje
+        ).all()
+        
+        if agendamentos_atrasados:
+            print(f"[SERVICO] Removendo {len(agendamentos_atrasados)} agendamento(s) atrasado(s) do tipo {tipo_servico} para {pet.name}")
+            for agendamento_antigo in agendamentos_atrasados:
+                print(f"[SERVICO] - Removendo agendamento ID {agendamento_antigo.id} de {agendamento_antigo.data_agendada}")
+                db.delete(agendamento_antigo)
+        
         # Criar serviço
         servico = Servico(
             pet_id=data['pet_id'],
@@ -1948,6 +1983,66 @@ def deletar_foto_concurso(concurso_id):
         db.rollback()
         print(f'[ERRO] Erro ao deletar foto: {e}')
         return jsonify({'success': False, 'message': 'Erro ao deletar foto.'}), 500
+    finally:
+        db.close()
+
+
+# Rota para limpar agendamentos atrasados (remove duplicatas antigas)
+@app.route('/api/servicos/limpar-atrasados', methods=['POST'])
+def limpar_agendamentos_atrasados():
+    """Remove agendamentos atrasados para evitar alertas duplicados"""
+    db = SessionLocal()
+    try:
+        data = request.json or {}
+        user_email = data.get('user_email', '')
+        
+        hoje = datetime.now().date()
+        
+        # Buscar usuário pelo email
+        user = db.query(User).filter(User.email == user_email).first() if user_email else None
+        
+        if user:
+            # Buscar agendamentos atrasados dos pets do usuário
+            agendamentos_atrasados = db.query(Servico).join(Pet).filter(
+                Pet.owner_id == user.id,
+                Servico.data_agendada < hoje
+            ).all()
+        else:
+            # Se não tiver email, buscar todos os agendamentos atrasados (admin)
+            agendamentos_atrasados = db.query(Servico).filter(
+                Servico.data_agendada < hoje
+            ).all()
+        
+        total_removidos = len(agendamentos_atrasados)
+        
+        if total_removidos > 0:
+            print(f"[LIMPEZA] Removendo {total_removidos} agendamento(s) atrasado(s)...")
+            for agendamento in agendamentos_atrasados:
+                pet = db.query(Pet).filter(Pet.id == agendamento.pet_id).first()
+                pet_name = pet.name if pet else "Unknown"
+                print(f"[LIMPEZA] - Removendo {agendamento.tipo} de {pet_name} (ID: {agendamento.id}, Data: {agendamento.data_agendada})")
+                db.delete(agendamento)
+            
+            db.commit()
+            print(f"[LIMPEZA] {total_removidos} agendamento(s) atrasado(s) removido(s) com sucesso")
+        else:
+            print("[LIMPEZA] Nenhum agendamento atrasado encontrado")
+        
+        return jsonify({
+            'success': True,
+            'message': f'{total_removidos} agendamento(s) atrasado(s) removido(s).',
+            'total_removidos': total_removidos
+        }), 200
+        
+    except Exception as e:
+        db.rollback()
+        print(f'[ERRO] Erro ao limpar agendamentos atrasados: {e}')
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'message': 'Erro ao limpar agendamentos atrasados.'
+        }), 500
     finally:
         db.close()
 

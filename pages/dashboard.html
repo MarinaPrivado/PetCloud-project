@@ -253,34 +253,37 @@
             background: #E68A2E;
         }
         
-        /* Container de Curiosidades */
+        /* Container de Curiosidades - EXPANDIDO */
         .tips-container {
             background: linear-gradient(135deg, #FFB366 0%, #FFCC99 100%);
-            padding: 20px;
-            border-radius: 15px;
+            padding: 30px 35px;
+            border-radius: 20px;
             color: #1a1a1a;
             margin-top: 20px;
-            box-shadow: 0 5px 15px rgba(255, 153, 51, 0.2);
+            box-shadow: 0 8px 25px rgba(255, 153, 51, 0.3);
+            border: 2px solid rgba(255, 153, 51, 0.4);
         }
         
         .tips-container h3 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-size: 24px;
+            font-weight: 800;
+            margin-bottom: 18px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            color: #1a1a1a;
         }
         
         .tips-container p {
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 16px;
+            line-height: 1.8;
             margin: 0;
-            opacity: 0.95;
+            font-weight: 500;
         }
         
         .tips-container i {
-            font-size: 24px;
+            font-size: 28px;
+            color: #E68A2E;
         }
         
         /* Rodapé (MANTIDO) */
@@ -517,14 +520,41 @@
                 }
             }
             
+            // Função para limpar agendamentos atrasados
+            async function limparAgendamentosAtrasados() {
+                try {
+                    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+                    const userEmail = userData.email || '';
+                    
+                    console.log('[DEBUG] Limpando agendamentos atrasados...');
+                    const response = await fetch('http://127.0.0.1:5000/api/servicos/limpar-atrasados', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ user_email: userEmail })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success && data.total_removidos > 0) {
+                        console.log(`[DEBUG] ${data.total_removidos} agendamento(s) atrasado(s) removido(s)`);
+                    }
+                } catch (error) {
+                    console.error('[DEBUG] Erro ao limpar agendamentos atrasados:', error);
+                }
+            }
+            
             // Carregar ao iniciar a página
             carregarEstatisticas();
             
-            // Aguardar DOM estar pronto antes de carregar alertas
-            setTimeout(() => {
-                console.log('[DEBUG] Iniciando carregamento de alertas...');
-                carregarTodosAlertas();
-            }, 100);
+            // Limpar agendamentos atrasados antes de carregar alertas
+            limparAgendamentosAtrasados().then(() => {
+                // Aguardar limpeza antes de carregar alertas
+                setTimeout(() => {
+                    console.log('[DEBUG] Iniciando carregamento de alertas...');
+                    carregarTodosAlertas();
+                }, 100);
+            });
             
             // Carregar todos os alertas e notificações
             async function carregarTodosAlertas() {
@@ -709,7 +739,7 @@
                 
                 <section class="tips-container">
                     <h3><i class="fas fa-lightbulb"></i> Dica do Dia</h3>
-                    <p>🐶 <strong>Você sabia?</strong> Cães precisam escovar os dentes regularmente! A saúde bucal é essencial para prevenir doenças cardíacas e renais. Escove os dentes do seu pet pelo menos 3 vezes por semana com pasta de dente própria para animais.</p>
+                    <p>� <strong>Fato Curioso:</strong> Gatos passam cerca de 70% de suas vidas dormindo – isso significa que um gato de 9 anos ficou acordado apenas por 3 anos! Além disso, os bigodes dos gatos são tão sensíveis que podem detectar até as menores mudanças nas correntes de ar, ajudando-os a navegar perfeitamente no escuro. 🌙✨</p>
                 </section>
             </div>
 

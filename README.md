@@ -1,5 +1,9 @@
 NOME DO SISTEMA: PetCloud - Sistema de Gestão e Comunidade para Pets
 
+## Tela Principal do Sistema
+
+![Tela Principal do PetCloud](imagens/home.png)
+
 ## INSTRUÇÕES DE NAVEGAÇÃO:
 
 ### 1. Arquivo Inicial
@@ -113,9 +117,6 @@ PetCloud/
    
    Abra no navegador: `http://127.0.0.1:5000/pages/index.html`
    
-   **Credenciais padrão:**
-   - Email: `italoreis99@gmail.com` | Senha: `senha123`
-   - Email: `luandapc3@gmail.com` | Senha: `senha123`
 
 ---
 

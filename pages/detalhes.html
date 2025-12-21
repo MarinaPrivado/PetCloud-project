@@ -72,6 +72,38 @@
         .pet-info p {
             font-size: 18px;
             color: #666;
+            margin-bottom: 12px;
+        }
+        
+        /* Tags de Comportamento no Header */
+        .pet-header-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+        
+        .pet-header-tags .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #FFB366 0%, #FFCC99 100%);
+            color: #1a1a1a;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(255, 153, 51, 0.2);
+            transition: all 0.3s;
+        }
+        
+        .pet-header-tags .tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 153, 51, 0.4);
+        }
+        
+        .pet-header-tags .tag i {
+            font-size: 13px;
         }
 
         .actions a {
@@ -586,6 +618,9 @@
             <div class="pet-info">
                     <h1 id="pet-name">Fido</h1>
                     <p id="pet-summary"><i class="fas fa-dog"></i> Pitbull - 3 anos</p>
+                    <div class="pet-header-tags" id="pet-header-tags">
+                        <!-- Tags serão carregadas dinamicamente -->
+                    </div>
                 </div>
             <div class="actions">
                 <a href="#" id="openEditModal"><i class="fas fa-edit"></i> Editar Perfil</a>
@@ -814,25 +849,40 @@
             }
         }
 
-        // Função para exibir tags de comportamento
+        // Mapeamento de tags para ícones e textos em português (compartilhado)
+        const tagInfo = {
+            'carinhoso': { icon: 'fas fa-heart', text: 'Carinhoso' },
+            'brincalhao': { icon: 'fas fa-futbol', text: 'Brincalhão' },
+            'calmo': { icon: 'fas fa-spa', text: 'Calmo' },
+            'energico': { icon: 'fas fa-bolt', text: 'Energético' },
+            'timido': { icon: 'fas fa-user-secret', text: 'Tímido' },
+            'sociavel': { icon: 'fas fa-users', text: 'Sociável' },
+            'protetor': { icon: 'fas fa-shield-alt', text: 'Protetor' },
+            'obediente': { icon: 'fas fa-check-circle', text: 'Obediente' },
+            'independente': { icon: 'fas fa-walking', text: 'Independente' },
+            'curioso': { icon: 'fas fa-search', text: 'Curioso' },
+            'medroso': { icon: 'fas fa-exclamation-triangle', text: 'Medroso' },
+            'agressivo': { icon: 'fas fa-angry', text: 'Agressivo' }
+        };
+        
+        // Função para exibir tags no header abaixo do resumo
+        function exibirTagsNoHeader(tags) {
+            const container = document.getElementById('pet-header-tags');
+            
+            if (!tags || tags.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+            
+            container.innerHTML = tags.map(tag => {
+                const info = tagInfo[tag.toLowerCase()] || { icon: 'fas fa-tag', text: tag };
+                return `<span class="tag"><i class="${info.icon}"></i> ${info.text}</span>`;
+            }).join('');
+        }
+        
+        // Função para exibir tags de comportamento na lateral
         function exibirTagsComportamento(tags) {
             const container = document.getElementById('behaviorTags');
-            
-            // Mapeamento de tags para ícones e textos em português
-            const tagInfo = {
-                'carinhoso': { icon: 'fas fa-heart', text: 'Carinhoso' },
-                'brincalhao': { icon: 'fas fa-futbol', text: 'Brincalhão' },
-                'calmo': { icon: 'fas fa-spa', text: 'Calmo' },
-                'energico': { icon: 'fas fa-bolt', text: 'Energético' },
-                'timido': { icon: 'fas fa-user-secret', text: 'Tímido' },
-                'sociavel': { icon: 'fas fa-users', text: 'Sociável' },
-                'protetor': { icon: 'fas fa-shield-alt', text: 'Protetor' },
-                'obediente': { icon: 'fas fa-check-circle', text: 'Obediente' },
-                'independente': { icon: 'fas fa-walking', text: 'Independente' },
-                'curioso': { icon: 'fas fa-search', text: 'Curioso' },
-                'medroso': { icon: 'fas fa-exclamation-triangle', text: 'Medroso' },
-                'agressivo': { icon: 'fas fa-angry', text: 'Agressivo' }
-            };
             
             if (!tags || tags.length === 0) {
                 container.innerHTML = '<p style="color: #999; font-size: 14px; margin-top: 10px;">Nenhuma tag de comportamento cadastrada</p>';
@@ -884,7 +934,8 @@
                 // Exibir foto do pet
                 exibirFotoPet(pet.photo_url);
                 
-                // Exibir tags de comportamento
+                // Exibir tags de comportamento no header e na lateral
+                exibirTagsNoHeader(pet.behavior_tags || []);
                 exibirTagsComportamento(pet.behavior_tags || []);
                 
                 // Buscar veterinário principal baseado nas vacinas
